@@ -12,7 +12,7 @@ export function Sidebar({ user, mail, badges: initial, show }: {
   user: { name: string; role: string; roleLabel: string };
   mail: boolean;
   badges: Badges;
-  show: { quotes: boolean; questionnaires: boolean; signatures: boolean; accounting: boolean };
+  show: { quotes: boolean; questionnaires: boolean; signatures: boolean; accounting: boolean; chat: boolean };
 }) {
   const path = usePathname();
   const [badges, setBadges] = useState(initial);
@@ -35,7 +35,7 @@ export function Sidebar({ user, mail, badges: initial, show }: {
   const items: Item[] = [
     { href: "/", label: "Tableau de bord", icon: "◧" },
     { href: "/notifications", label: "Notifications", icon: "🔔", badge: "unreadNotifs", badgeColor: "bg-link-600" },
-    { href: "/messages", label: "Messages", icon: "💬", badge: "unreadMessages", badgeColor: "bg-link-600" },
+    ...(show.chat ? [{ href: "/messages", label: "Messages", icon: "💬", badge: "unreadMessages" as const, badgeColor: "bg-link-600" }] : []),
     { href: "/prestations", label: "Prestations", icon: "🎧" },
     { href: "/agenda", label: "Agenda", icon: "▦" },
     { href: "/clients", label: "Clients", icon: "◉" },

@@ -3,6 +3,7 @@ import { getCompany } from "@/lib/company";
 import { LeadForm } from "./LeadForm";
 
 export const metadata = { title: "Demande de devis" };
+export const dynamic = "force-dynamic";
 
 /** Formulaire public (lien ou iframe sur votre site : /demande). */
 export default async function LeadPage() {

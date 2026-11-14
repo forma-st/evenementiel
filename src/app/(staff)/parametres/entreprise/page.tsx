@@ -34,6 +34,11 @@ export default async function CompanySettings() {
         <F name="vat" label="N° de TVA" value={c.vat} />
         <label className="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" name="vatExempt" defaultChecked={c.vatExempt} className="h-4 w-4 accent-brand-600" /> Franchise en base de TVA (micro-entreprise) : « TVA non applicable, art. 293 B du CGI »</label>
       </section>
+      <section className="card space-y-2 p-6">
+        <h2 className="font-semibold">Équipe</h2>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="teamChat" defaultChecked={c.teamChat} className="h-4 w-4 accent-brand-600" /> Afficher la messagerie d&apos;équipe (bulle de discussion et menu « Messages »)</label>
+        <p className="text-xs text-slate-500">À activer quand vous travaillez à plusieurs. Les messages déjà échangés sont conservés.</p>
+      </section>
       <section className="card grid gap-4 p-6 sm:grid-cols-2">
         <h2 className="font-semibold sm:col-span-2">Paiements et suivi</h2>
         <F name="iban" label="IBAN" value={c.iban} />

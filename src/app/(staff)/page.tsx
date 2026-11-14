@@ -10,6 +10,7 @@ import { eventKind } from "@/lib/presta";
 import { SIGNATURE_STATUSES } from "@/lib/signature";
 import { WIDGETS, WIDGET_IDS, allowed, readLayout, type WidgetId } from "@/lib/widgets";
 import { conversationsFor } from "@/lib/chat";
+import { getCompany } from "@/lib/company";
 import { Badge, Empty, PageHeader } from "@/components/ui";
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { DashboardGrid } from "@/components/DashboardGrid";
@@ -34,7 +35,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const period = (PERIODS.some((p) => p.id === sp.periode) ? sp.periode : "12m") as PeriodId;
   const team = perms.canViewTeamDashboard;
   const memberId = team ? sp.membre || null : user.id;
-  const layout = readLayout(user.dashboardLayout, perms);
+  const teamChat = (await getCompany()).teamChat;
+  const layout = readLayout(user.dashboardLayout, perms).filter((l) => teamChat || l.id !== "messages");
   const on = new Set(layout.map((l) => l.id));
   const needStats = ["kpis", "revenue", "pipeline", "tasksChart"].some((w) => on.has(w as WidgetId));
 
@@ -279,7 +281,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     };
   }
 
-  const catalog = WIDGET_IDS.filter((id) => allowed(id, perms)).map((id) => ({ id, title: WIDGETS[id].title, help: WIDGETS[id].help, size: WIDGETS[id].size }));
+  const catalog = WIDGET_IDS.filter((id) => allowed(id, perms) && (teamChat || id !== "messages")).map((id) => ({ id, title: WIDGETS[id].title, help: WIDGETS[id].help, size: WIDGETS[id].size }));
 
   return (
     <div className="space-y-6">

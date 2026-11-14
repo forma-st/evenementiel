@@ -27,6 +27,7 @@ export async function saveCompany(f: FormData) {
   const keys = ["name", "tagline", "legal", "address", "siret", "vat", "phone", "email", "web", "iban", "bic", "reviewUrl", "quoteFooter"];
   const value: Record<string, unknown> = Object.fromEntries(keys.map((k) => [k, String(f.get(k) ?? "").trim()]));
   value.vatExempt = f.get("vatExempt") === "on";
+  value.teamChat = f.get("teamChat") === "on";
   await db.setting.upsert({ where: { key: "company" }, update: { value: JSON.stringify(value) }, create: { key: "company", value: JSON.stringify(value) } });
   const logo = f.get("logo");
   if (logo instanceof File && logo.size) {

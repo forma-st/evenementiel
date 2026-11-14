@@ -17,6 +17,7 @@ export type Company = {
   vatExempt: boolean; // auto-entrepreneur : « TVA non applicable, art. 293 B du CGI »
   reviewUrl: string;  // lien d'avis Google / Mariages.net envoyé après la prestation
   quoteFooter: string;
+  teamChat: boolean; // messagerie d'équipe (masquée quand on travaille seul)
 };
 
 export const DEFAULT_COMPANY: Company = {
@@ -33,6 +34,7 @@ export const DEFAULT_COMPANY: Company = {
   bic: "",
   vatExempt: false,
   reviewUrl: "",
+  teamChat: false,
   quoteFooter: "Devis valable 30 jours. Réservation de la date à réception du contrat signé et de l'acompte.",
 };
 
