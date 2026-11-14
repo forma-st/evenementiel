@@ -1,0 +1,37 @@
+{
+  "name": "formast-crm",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && prisma db push --skip-generate && tsx prisma/migrate.ts && next build",
+    "start": "next start",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "postinstall": "prisma generate",
+    "db:migrate-data": "tsx prisma/migrate.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.3",
+    "@vercel/blob": "2.8.2",
+    "bcryptjs": "3.0.3",
+    "jose": "6.1.0",
+    "next": "16.4.6",
+    "pdf-lib": "1.17.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.1.14",
+    "@types/node": "22.18.8",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "prisma": "6.19.3",
+    "tailwindcss": "4.1.14",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.2"
+  }
+}

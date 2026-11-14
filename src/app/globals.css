@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  /* Violet « nuit » : boutons, éléments actifs */
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-500: #8b5cf6;
+  --color-brand-600: #6d28d9;
+  --color-brand-700: #5b21b6;
+  /* Bleu : liens, focus */
+  --color-link-100: #dbeafe;
+  --color-link-500: #3b82f6;
+  --color-link-600: #2563eb;
+  --color-link-700: #1d4ed8;
+  --color-ink: #1e1b2e;
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", "Figtree", ui-sans-serif, sans-serif;
+}
+
+h1, h2, h3 { font-family: var(--font-display); }
+
+body { @apply bg-slate-50 text-ink antialiased; }
+
+@utility input { @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-link-500 focus:ring-2 focus:ring-link-100; }
+@utility label { @apply mb-1 block text-sm font-medium text-slate-700; }
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition disabled:opacity-50; }
+@utility btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700; }
+@utility btn-secondary { @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50; }
+@utility btn-danger { @apply btn bg-rose-600 text-white hover:bg-rose-700; }
+@utility card { @apply rounded-xl border border-slate-200 bg-white shadow-sm; }
+@utility badge { @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium; }
+
+@layer components {
+  .table { @apply w-full text-left text-sm; }
+  .table th { @apply border-b border-slate-200 px-4 py-2.5 text-xs font-semibold tracking-wide text-slate-500 uppercase; }
+  .table td { @apply border-b border-slate-100 px-4 py-3; }
+  .table tr:last-child td { @apply border-b-0; }
+}
+
+@keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

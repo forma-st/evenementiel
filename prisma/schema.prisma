@@ -1,0 +1,586 @@
+// Base PostgreSQL (Neon, Supabase, Scaleway… ou Postgres local)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Rôles : ADMIN, MANAGER (responsable / équipe admin), MEMBER (collaborateur), CLIENT (portail)
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         String    @default("MEMBER")
+  active       Boolean   @default(true)
+  phone        String?
+  jobTitle     String?
+  icsToken     String?
+  dashboardLayout String? // disposition personnalisée du tableau de bord (JSON)
+  clientsOwned Client[]  @relation("ClientOwner")
+  notifications Notification[]
+  messages     Message[]
+  memberships  ConversationMember[]
+  eventsOrganized Event[] @relation("EventOrganizer")
+  eventAttendances EventAttendee[]
+  signatureRequests SignatureRequest[]
+  clientId     String?
+  client       Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  dossiers     Dossier[] @relation("Assignee")
+  activities   Activity[]
+  tasks        Task[]    @relation("TaskAssignee")
+  tasksCreated Task[]    @relation("TaskCreator")
+  createdAt    DateTime  @default(now())
+}
+
+model Client {
+  id                  String    @id @default(cuid())
+  type                String    @default("COMPANY") // COMPANY | INDIVIDUAL
+  name                String
+  siren               String?
+  siret               String?
+  vatNumber           String?
+  nafCode             String?
+  legalForm           String?
+  headcount           String?
+  email               String?
+  phone               String?
+  address             String?
+  postalCode          String?
+  city                String?
+  country             String    @default("FR")
+  tags                String    @default("") // ancien format texte, migré vers tagList
+  tagList             Tag[]
+  ownerId             String?
+  owner               User?     @relation("ClientOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  events              Event[]
+  notes               String?
+  contacts            Contact[]
+  dossiers            Dossier[]
+  quotes              Quote[]
+  users               User[]
+  assignments         QuestionnaireAssignment[]
+  tasks               Task[]
+  signatures          SignatureRequest[]
+  galleries           Gallery[]
+  invoices            Invoice[]
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model Contact {
+  id        String  @id @default(cuid())
+  clientId  String
+  client    Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  jobTitle  String?
+}
+
+// Prestation événementielle (mariage, anniversaire, soirée d'entreprise…)
+model Dossier {
+  id          String     @id @default(cuid())
+  reference   String     @unique
+  title       String
+  description String?
+  status      String     @default("DEMANDE") // DEMANDE | DEVIS_ENVOYE | OPTION | CONFIRME | REALISE | CLOTURE | PERDU
+  priority    String     @default("NORMALE") // BASSE | NORMALE | HAUTE
+  dueDate     DateTime?
+  amount      Float?
+  eventType   String     @default("MARIAGE") // MARIAGE | ANNIVERSAIRE | ENTREPRISE | BAPTEME | GALA | CONCERT | SOIREE | AUTRE
+  services    String     @default("")        // liste séparée par des virgules : DJ,SONO,LUMIERE,PHOTO,VIDEO,PHOTOBOOTH,ANIMATION
+  eventStart  DateTime?  // début de la prestation (heure de Paris convertie en UTC)
+  eventEnd    DateTime?
+  setupTime   String?    // heure d'installation, ex. « 16:00 »
+  venueName   String?
+  venueAddress String?
+  venueCity   String?
+  venueContact String?   // contact sur place / traiteur / coordinatrice
+  guests      Int?
+  source      String?    // origine du contact : site, Instagram, bouche à oreille…
+  lostReason  String?
+  depositPercent Float   @default(30)
+  equipment   DossierEquipment[]
+  payments    Payment[]
+  galleries   Gallery[]
+  invoices    Invoice[]
+  emails      EmailLog[]
+  automationRuns AutomationRun[]
+  clientId    String
+  client      Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assigneeId  String?
+  assignee    User?      @relation("Assignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  activities  Activity[]
+  quotes      Quote[]
+  assignments QuestionnaireAssignment[]
+  tasks       Task[]
+  events      Event[]
+  signatures  SignatureRequest[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  dossierId String
+  dossier   Dossier  @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  kind      String   @default("NOTE") // NOTE | STATUS | QUOTE | QUESTIONNAIRE
+  body      String
+  createdAt DateTime @default(now())
+}
+
+model Quote {
+  id               String   @id @default(cuid())
+  clientId         String
+  client           Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  dossierId        String?
+  dossier          Dossier? @relation(fields: [dossierId], references: [id], onDelete: SetNull)
+  label            String
+  number           String?  @unique // numéro interne DEV-2026-0001
+  token            String?  @unique // lien public de consultation
+  lines            String   // JSON : [{label, quantity, unitPrice, vatRate, unit, description?}]
+  totalHT          Float
+  totalTTC         Float
+  discount         Float    @default(0) // remise HT
+  depositPercent   Float    @default(30)
+  notes            String?  // conditions particulières
+  sentAt           DateTime?
+  viewedAt         DateTime?
+  answeredAt       DateTime?
+  status           String   @default("BROUILLON") // BROUILLON | ENVOYE | ACCEPTE | REFUSE | EXPIRE
+  signatures       SignatureRequest[]
+  invoices         Invoice[]
+  issuedAt         DateTime @default(now())
+  validUntil       DateTime
+  createdAt        DateTime @default(now())
+}
+
+model Questionnaire {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  fields      String   // JSON : [{id, type, label, required, options?, help?}]
+  archived    Boolean  @default(false)
+  assignments QuestionnaireAssignment[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model QuestionnaireAssignment {
+  id              String        @id @default(cuid())
+  token           String        @unique
+  questionnaireId String
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+  clientId        String
+  client          Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  dossierId       String?
+  dossier         Dossier?      @relation(fields: [dossierId], references: [id], onDelete: SetNull)
+  status          String        @default("ENVOYE") // ENVOYE | COMPLETE
+  answers         String?       // JSON : { fieldId: value }
+  submittedAt     DateTime?
+  createdAt       DateTime      @default(now())
+}
+
+// Tâches (vue tableau type Monday + Kanban)
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  type        String    @default("TACHE")   // TACHE | APPEL | EMAIL | RDV | RELANCE
+  status      String    @default("A_FAIRE") // A_FAIRE | EN_COURS | BLOQUE | FAIT
+  priority    String    @default("NORMALE") // BASSE | NORMALE | HAUTE | URGENTE
+  dueDate     DateTime?
+  completedAt DateTime?
+  assigneeId  String?
+  assignee    User?     @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdBy   User?     @relation("TaskCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  clientId    String?
+  client      Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  dossierId   String?
+  dossier     Dossier?  @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([assigneeId, status])
+  @@index([dueDate])
+}
+
+// Réglages (droits par rôle, informations société…) stockés en JSON
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model Tag {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  color   String   @default("slate")
+  clients Client[]
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String    // TASK | MENTION | MESSAGE | EVENT | QUESTIONNAIRE | SYSTEM
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+// Chat interne : canaux d'équipe et messages privés
+model Conversation {
+  id            String               @id @default(cuid())
+  kind          String               @default("CHANNEL") // CHANNEL | DIRECT
+  name          String?
+  lastMessageAt DateTime             @default(now())
+  members       ConversationMember[]
+  messages      Message[]
+  createdAt     DateTime             @default(now())
+}
+
+model ConversationMember {
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt     DateTime     @default(now())
+
+  @@id([conversationId, userId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  body           String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// Agenda : réunions, appels, visios, rendez-vous, formations
+model Event {
+  id            String          @id @default(cuid())
+  title         String
+  type          String          @default("RDV") // PRESTATION | RDV | VISITE | INSTALL | APPEL | VISIO | REUNION | INDISPO | AUTRE
+  start         DateTime
+  end           DateTime
+  allDay        Boolean         @default(false)
+  location      String?
+  description   String?
+  report        String?         // compte-rendu
+  clientId      String?
+  client        Client?         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  dossierId     String?
+  dossier       Dossier?        @relation(fields: [dossierId], references: [id], onDelete: SetNull)
+  organizerId   String?
+  organizer     User?           @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: SetNull)
+  attendees     EventAttendee[]
+  googleEventId String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([start])
+}
+
+model EventAttendee {
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, userId])
+}
+
+// Automatisations : quand un dossier passe à un statut -> actions (tâches, notifications, questionnaire, message)
+model AutomationRule {
+  id        String   @id @default(cuid())
+  name      String
+  active    Boolean  @default(true)
+  trigger   String   @default("STATUS") // STATUS | EVENT_OFFSET | QUOTE_NO_REPLY | PAYMENT_LATE | GALLERY_PUBLISHED | CONTRACT_SIGNED
+  toStatus  String   @default("")       // statut qui déclenche (trigger STATUS)
+  offsetDays Int     @default(0)        // EVENT_OFFSET : -30 = J-30, 2 = J+2 ; QUOTE_NO_REPLY / PAYMENT_LATE : nombre de jours
+  onlyStatuses String @default("")      // pour les règles planifiées : statuts concernés (vide = confirmés et réalisés)
+  eventTypes String  @default("")       // filtre facultatif par type d'événement
+  actions   String   // JSON : liste d'actions
+  runs      AutomationRun[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Signature électronique simple (eIDAS) : un document, un ou plusieurs signataires
+model SignatureRequest {
+  id            String            @id @default(cuid())
+  title         String
+  message       String?
+  status        String            @default("EN_ATTENTE") // EN_ATTENTE | SIGNE | REFUSE | ANNULE
+  clientId      String
+  client        Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  dossierId     String?
+  dossier       Dossier?          @relation(fields: [dossierId], references: [id], onDelete: SetNull)
+  quoteId       String?
+  quote         Quote?            @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  createdById   String?
+  createdBy     User?             @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  fileName      String
+  original      Bytes             // PDF d'origine
+  originalHash  String            // SHA-256 du PDF d'origine
+  signedPdf     Bytes?            // PDF final signé + dossier de preuve
+  signedHash    String?
+  winOnSign     Boolean           @default(false) // passer la prestation à « Confirmée » une fois signé
+  kind          String            @default("DOCUMENT") // DOCUMENT | DEVIS | CONTRAT
+  templateId    String?
+  expiresAt     DateTime
+  completedAt   DateTime?
+  signers       SignatureSigner[]
+  createdAt     DateTime          @default(now())
+}
+
+model SignatureSigner {
+  id             String           @id @default(cuid())
+  requestId      String
+  request        SignatureRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  name           String
+  email          String?
+  token          String           @unique
+  status         String           @default("EN_ATTENTE") // EN_ATTENTE | SIGNE | REFUSE
+  viewedAt       DateTime?
+  signedAt       DateTime?
+  signatureImage String?          // image PNG (data URL) du tracé
+  ip             String?
+  userAgent      String?
+  declineReason  String?
+}
+
+// Une exécution d'une règle planifiée pour une prestation (évite les doublons)
+model AutomationRun {
+  id        String         @id @default(cuid())
+  ruleId    String
+  rule      AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  dossierId String
+  dossier   Dossier        @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  key       String         @default("") // ex. identifiant du devis ou du paiement concerné
+  createdAt DateTime       @default(now())
+
+  @@unique([ruleId, dossierId, key])
+}
+
+// Catalogue : forfaits et options proposés dans les devis
+model CatalogItem {
+  id          String   @id @default(cuid())
+  category    String   @default("DJ") // DJ | SONO | LUMIERE | PHOTO | VIDEO | PHOTOBOOTH | DEPLACEMENT | OPTION | PACK
+  label       String
+  description String?
+  unit        String   @default("forfait")
+  unitPrice   Float
+  vatRate     Float    @default(20)
+  active      Boolean  @default(true)
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+// Modèles de contrats (texte avec variables {{…}})
+model ContractTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  body      String
+  services  String   @default("") // services auxquels le modèle s'applique (suggestion)
+  attachQuote Boolean @default(true) // joindre le devis accepté en annexe
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Modèles d'e-mails (utilisés à la main et par les automatisations)
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  subject   String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Historique des e-mails envoyés aux clients
+model EmailLog {
+  id        String   @id @default(cuid())
+  dossierId String?
+  dossier   Dossier? @relation(fields: [dossierId], references: [id], onDelete: SetNull)
+  clientId  String?
+  to        String
+  subject   String
+  body      String
+  status    String   @default("ENVOYE") // ENVOYE | SIMULE | ERREUR
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([dossierId])
+}
+
+// Échéancier : acompte, solde…
+model Payment {
+  id        String    @id @default(cuid())
+  dossierId String?
+  dossier   Dossier?  @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  clientId  String?   // encaissement hors prestation
+  label     String
+  amount    Float
+  dueDate   DateTime?
+  paidAt    DateTime?
+  method    String?   // virement, chèque, espèces, CB…
+  invoiceId String?
+  invoice   Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  createdAt DateTime  @default(now())
+
+  @@index([dueDate])
+}
+
+// Parc matériel (sono, lumière, photo) et réservation par prestation
+model Equipment {
+  id        String   @id @default(cuid())
+  name      String
+  category  String   @default("SONO") // SONO | LUMIERE | DJ | PHOTO | VIDEO | STRUCTURE | AUTRE
+  quantity  Int      @default(1)
+  notes     String?
+  active    Boolean  @default(true)
+  bookings  DossierEquipment[]
+  createdAt DateTime @default(now())
+}
+
+model DossierEquipment {
+  dossierId   String
+  dossier     Dossier   @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  quantity    Int       @default(1)
+
+  @@id([dossierId, equipmentId])
+}
+
+// Galeries photo et transferts de fichiers
+model Gallery {
+  id            String    @id @default(cuid())
+  kind          String    @default("GALERIE") // GALERIE | TRANSFERT
+  title         String
+  message       String?
+  token         String    @unique
+  password      String?   // code d'accès (facultatif)
+  status        String    @default("BROUILLON") // BROUILLON | PUBLIEE | ARCHIVEE
+  clientId      String?
+  client        Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  dossierId     String?
+  dossier       Dossier?  @relation(fields: [dossierId], references: [id], onDelete: SetNull)
+  allowDownload Boolean   @default(true)
+  allowFavorites Boolean  @default(true)
+  externalUrl   String?   // galerie hébergée ailleurs (Jingoo…)
+  externalCode  String?
+  coverId       String?
+  expiresAt     DateTime?
+  publishedAt   DateTime?
+  views         Int       @default(0)
+  downloads     Int       @default(0)
+  files         GalleryFile[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model GalleryFile {
+  id        String   @id @default(cuid())
+  galleryId String
+  gallery   Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  name      String
+  mime      String
+  size      Int
+  url       String   // fichier d'origine
+  thumbUrl  String?  // miniature (photos)
+  width     Int?
+  height    Int?
+  favorite  Boolean  @default(false) // sélection du client
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([galleryId, position])
+}
+
+// Factures (numérotation continue attribuée à l'émission ; une facture émise n'est plus modifiable : on fait un avoir)
+model Invoice {
+  id          String    @id @default(cuid())
+  number      String?   @unique // FA-2026-0001, attribué à l'émission
+  kind        String    @default("FACTURE") // FACTURE | ACOMPTE | AVOIR
+  status      String    @default("BROUILLON") // BROUILLON | EMISE | PAYEE | ANNULEE
+  clientId    String
+  client      Client    @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  dossierId   String?
+  dossier     Dossier?  @relation(fields: [dossierId], references: [id], onDelete: SetNull)
+  quoteId     String?
+  quote       Quote?    @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  creditOfId  String?   // avoir : facture d'origine
+  label       String
+  lines       String    // JSON QuoteLine[]
+  discount    Float     @default(0)
+  deducted    Float     @default(0) // acomptes déjà facturés (TTC), déduits du net à payer
+  totalHT     Float
+  totalTVA    Float
+  totalTTC    Float
+  issueDate   DateTime?
+  dueDate     DateTime?
+  serviceDate DateTime? // date de la prestation (mention obligatoire)
+  notes       String?
+  seller      String?   // instantané JSON des coordonnées vendeur à l'émission
+  buyer       String?   // instantané JSON des coordonnées client à l'émission
+  einvoiceStatus String @default("") // « » | A_DEPOSER | DEPOSEE (plateforme agréée)
+  einvoiceAt  DateTime?
+  sentAt      DateTime?
+  payments    Payment[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([issueDate])
+}
+
+// Dépenses (pré-comptabilité, justificatifs)
+model Expense {
+  id        String   @id @default(cuid())
+  date      DateTime
+  supplier  String
+  label     String
+  category  String   @default("MATERIEL") // MATERIEL | DEPLACEMENT | LOGICIEL | MUSIQUE | COMMUNICATION | SOUS_TRAITANCE | ASSURANCE | BANQUE | AUTRE
+  amountTTC Float
+  vat       Float    @default(0)
+  method    String?
+  receiptUrl String?
+  dossierId String?
+  createdAt DateTime @default(now())
+
+  @@index([date])
+}
+
+// Déclarations de chiffre d'affaires URSSAF (micro-entreprise)
+model UrssafDeclaration {
+  id          String    @id @default(cuid())
+  period      String    @unique // 2026-11 (mensuelle) ou 2026-T4 (trimestrielle)
+  turnover    Float     // CA encaissé déclaré
+  contributions Float   // cotisations sociales calculées
+  cfp         Float     @default(0)
+  incomeTax   Float     @default(0) // versement libératoire
+  declaredAt  DateTime?
+  paidAt      DateTime?
+  reference   String?
+  createdAt   DateTime  @default(now())
+}
