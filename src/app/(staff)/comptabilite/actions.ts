@@ -5,7 +5,7 @@ import { requireStaff } from "@/lib/auth";
 import { ForbiddenError } from "@/lib/permissions";
 import { contributionsFor, getUrssaf, periodOf, turnoverBetween, ACTIVITIES, type UrssafSettings } from "@/lib/urssaf";
 import { fromParis } from "@/lib/format";
-import { isBlobConfigured, saveLocal } from "@/lib/storage";
+import { blobToken, isBlobConfigured, saveLocal } from "@/lib/storage";
 import { PLATFORMS } from "@/lib/einvoice";
 
 async function guard() {
@@ -48,7 +48,7 @@ export async function addExpense(f: FormData) {
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (isBlobConfigured()) {
       const { put } = await import("@vercel/blob");
-      receiptUrl = (await put(`justificatifs/${file.name}`, Buffer.from(bytes), { access: "public", addRandomSuffix: true })).url;
+      receiptUrl = (await put(`justificatifs/${file.name}`, Buffer.from(bytes), { access: "public", addRandomSuffix: true, token: blobToken() })).url;
     } else receiptUrl = await saveLocal("justificatifs", file.name, bytes);
   }
   await db.expense.create({

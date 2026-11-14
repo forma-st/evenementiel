@@ -22,7 +22,7 @@ async function thumbnail(file: File): Promise<{ blob: Blob; width: number; heigh
 
 const safe = (n: string) => n.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w.\-]+/g, "_");
 
-export function GalleryUploader({ galleryId, blob }: { galleryId: string; blob: boolean }) {
+export function GalleryUploader({ galleryId, blob, disabledReason }: { galleryId: string; blob: boolean; disabledReason?: string | null }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<Item[]>([]);
@@ -52,7 +52,7 @@ export function GalleryUploader({ galleryId, blob }: { galleryId: string; blob: 
         const x = new XMLHttpRequest();
         x.open("POST", `/api/galeries/${galleryId}/fichiers`);
         x.upload.onprogress = (e) => e.lengthComputable && patch(i, { done: Math.round((e.loaded / e.total) * 100) });
-        x.onload = () => (x.status < 300 ? resolve() : reject(new Error(x.status === 413 ? "Fichier trop lourd pour ce serveur (activez Vercel Blob)" : JSON.parse(x.responseText || "{}").error ?? `Erreur ${x.status}`)));
+        x.onload = () => (x.status < 300 ? resolve() : reject(new Error(x.status === 413 ? "Fichier trop lourd pour ce serveur (activez Vercel Blob)" : (() => { try { return JSON.parse(x.responseText || "{}").error ?? `Erreur ${x.status}`; } catch { return `Erreur ${x.status}`; } })())));
         x.onerror = () => reject(new Error("Connexion interrompue"));
         x.send(fd);
       });
@@ -81,6 +81,8 @@ export function GalleryUploader({ galleryId, blob }: { galleryId: string; blob: 
   const errors = items.filter((x) => x.status === "erreur");
   const total = items.reduce((a, x) => a + x.size, 0);
   const sent = items.reduce((a, x) => a + (x.size * x.done) / 100, 0);
+
+  if (disabledReason) return <div className="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 px-6 py-8 text-center text-sm text-amber-900">⚠ {disabledReason}<br /><span className="text-xs">Détail des étapes : Paramètres › Intégrations.</span></div>;
 
   return (
     <div>

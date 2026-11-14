@@ -54,7 +54,7 @@ export default async function Integrations() {
       </Card>
       <Card title="Stockage des photos (Vercel Blob)" actions={<Status on={isBlobConfigured()} labelOff="Disque local" />}>
         <p className="text-sm text-slate-600">Les photos et fichiers des galeries partent directement du navigateur vers le stockage, sans limite de taille.</p>
-        {!isBlobConfigured() && <p className="mt-2 text-sm text-slate-500">Sur Vercel : onglet Storage › Create › Blob, puis connectez-le au projet (la variable <code>BLOB_READ_WRITE_TOKEN</code> est ajoutée seule) et redéployez. Indispensable en production : sans lui, les gros fichiers sont refusés.</p>}
+        {!isBlobConfigured() && <p className="mt-2 text-sm text-slate-500">Sur Vercel : onglet Storage › Create › Blob (accès <b>Public</b>), connectez-le au projet en cochant Production, puis Deployments › … › Redeploy. La variable <code>BLOB_READ_WRITE_TOKEN</code> doit apparaître dans Settings › Environment Variables. Indispensable en ligne : sans lui, aucune photo ne peut être déposée.</p>}
       </Card>
       <Card title="Formulaire de demande et disponibilités" actions={<Status on labelOn="Actif" />}>
         <p className="text-sm text-slate-600">Lien à mettre sur votre site : <a href={`${base}/demande`} target="_blank" className="text-link-600 hover:underline">{base}/demande</a> <CopyLink url={`${base}/demande`} /></p>

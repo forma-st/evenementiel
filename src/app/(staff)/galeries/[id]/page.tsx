@@ -6,7 +6,7 @@ import { Back, Badge, Card, PageHeader } from "@/components/ui";
 import { GALLERY_STATUSES, fileSize } from "@/lib/galleries";
 import { dateTime } from "@/lib/format";
 import { baseUrl } from "@/lib/merge";
-import { isBlobConfigured } from "@/lib/storage";
+import { NO_BLOB_MESSAGE, isBlobConfigured, onVercelWithoutBlob } from "@/lib/storage";
 import { galleryFormData } from "@/lib/galleryForm";
 import { GalleryForm } from "@/components/GalleryForm";
 import { GalleryUploader } from "@/components/GalleryUploader";
@@ -71,7 +71,7 @@ export default async function GalleryAdmin({ params }: { params: Promise<{ id: s
 
       <Card title="Fichiers" actions={<div className="flex gap-2"><form action={sortFilesByName.bind(null, id)}><button className="btn-secondary py-1 text-xs">Trier par nom</button></form><form action={resetFavorites.bind(null, id)}><button className="btn-secondary py-1 text-xs">Effacer les favoris</button></form></div>}>
         <div className="space-y-5">
-          <GalleryUploader galleryId={id} blob={isBlobConfigured()} />
+          <GalleryUploader galleryId={id} blob={isBlobConfigured()} disabledReason={onVercelWithoutBlob() ? NO_BLOB_MESSAGE : null} />
           <GalleryFiles files={g.files} coverId={g.coverId} onDelete={deleteFiles.bind(null, id)} onCover={setCover.bind(null, id)} />
         </div>
       </Card>

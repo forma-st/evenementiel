@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { isBlobConfigured, saveLocal } from "@/lib/storage";
+import { NO_BLOB_MESSAGE, isBlobConfigured, onVercelWithoutBlob, saveLocal } from "@/lib/storage";
 
 const bad = (error: string, status = 400) => NextResponse.json({ error }, { status });
 
@@ -29,6 +29,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   if (isBlobConfigured()) return bad("Utilisez l'envoi direct (Vercel Blob).");
+  if (onVercelWithoutBlob()) return bad(NO_BLOB_MESSAGE, 503);
   const form = await req.formData();
   const file = form.get("file");
   if (!(file instanceof File) || !file.size) return bad("Fichier manquant");
