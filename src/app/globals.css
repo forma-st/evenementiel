@@ -42,3 +42,8 @@ body { @apply bg-slate-50 text-ink antialiased; }
 @keyframes activity { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
 .activity-bar { animation: activity 1.1s ease-in-out infinite; }
 button:disabled { cursor: progress; }
+
+@media print {
+  body { background: white; }
+  @page { margin: 14mm; }
+}

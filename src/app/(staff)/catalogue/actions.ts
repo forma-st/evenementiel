@@ -39,7 +39,8 @@ export async function deleteCatalogItem(id: string) {
 
 export async function saveEquipment(id: string | null, f: FormData) {
   await requireStaff();
-  const data = { name: s(f, "name") || "Matériel", category: s(f, "category") || "AUTRE", quantity: Math.max(0, Math.round(n(s(f, "quantity"), 1))), notes: s(f, "notes") || null };
+  const quantity = Math.max(0, Math.round(n(s(f, "quantity"), 1)));
+  const data = { name: s(f, "name") || "Matériel", category: s(f, "category") || "AUTRE", quantity, outOfService: Math.min(quantity, Math.max(0, Math.round(n(s(f, "outOfService"), 0)))), notes: s(f, "notes") || null };
   if (id) await db.equipment.update({ where: { id }, data });
   else await db.equipment.create({ data });
   revalidatePath("/materiel");

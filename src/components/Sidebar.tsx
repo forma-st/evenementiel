@@ -51,7 +51,7 @@ export function Sidebar({ user, mail, badges: initial, show }: {
   const active = (h: string) => (h === "/" ? path === "/" : path.startsWith(h));
 
   return (
-    <aside className="flex w-full shrink-0 flex-col border-b border-slate-200 bg-white md:sticky md:top-0 md:h-screen md:w-60 md:border-r md:border-b-0">
+    <aside className="flex w-full shrink-0 flex-col print:hidden border-b border-slate-200 bg-white md:sticky md:top-0 md:h-screen md:w-60 md:border-r md:border-b-0">
       <div className="flex items-center justify-between gap-3 px-5 py-4 md:block">
         <Logo className="h-9" />
         <div className="text-[11px] font-semibold tracking-[0.2em] text-slate-400 uppercase md:mt-2">Événementiel</div>

@@ -20,7 +20,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
         badges={badges}
         show={{ quotes: p.canViewQuotes, questionnaires: p.canManageQuestionnaires, signatures: p.canSendSignatures, accounting: user.role === "ADMIN" || user.role === "MANAGER", chat: c.teamChat }}
       />
-      <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
+      <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8 print:p-0">{children}</main>
       {c.teamChat && <ChatDock />}
     </div>
   );

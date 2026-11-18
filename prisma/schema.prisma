@@ -478,6 +478,7 @@ model Equipment {
   name      String
   category  String   @default("SONO") // SONO | LUMIERE | DJ | PHOTO | VIDEO | STRUCTURE | AUTRE
   quantity  Int      @default(1)
+  outOfService Int   @default(0) // unités en réparation / indisponibles
   notes     String?
   active    Boolean  @default(true)
   bookings  DossierEquipment[]
