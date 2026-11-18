@@ -148,7 +148,7 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove }: {
       )}
 
       {/* Filtres communs au planning et à l'inventaire */}
-      <div className="-mx-4 flex flex-wrap items-center gap-2 border-b md:sticky md:top-0 md:z-20 border-slate-200 bg-slate-50/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
+      <div className="-mx-4 flex flex-wrap items-center gap-2 border-b md:sticky md:top-0 md:z-20 border-slate-200 bg-white/70 px-4 py-3 backdrop-blur-xl md:-mx-8 md:px-8">
         <input value={q} onChange={(e) => setQ(e.target.value)} type="search" placeholder="Rechercher un matériel" className="input w-full md:w-56" aria-label="Rechercher un matériel" />
         <div className="-mx-4 flex w-[calc(100%+2rem)] gap-1 overflow-x-auto px-4 md:mx-0 md:w-auto md:flex-wrap md:overflow-visible md:px-0" role="group" aria-label="Catégorie">
           <button onClick={() => setCat("")} aria-pressed={!cat} className={`shrink-0 rounded-full px-3 py-1.5 text-sm ${!cat ? "bg-ink text-paper" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"}`}>Tout</button>
