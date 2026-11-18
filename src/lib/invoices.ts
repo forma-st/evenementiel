@@ -5,6 +5,7 @@ import { type QuoteLine, parseLines, totals } from "./quotes";
 import { date, TZ } from "./format";
 import { eventKind } from "./presta";
 import { invoiceToPdf } from "./pdf";
+import { documentStyle } from "./pdfStyle";
 
 export const INVOICE_KINDS: Record<string, { label: string; code: string }> = {
   FACTURE: { label: "Facture", code: "380" },
@@ -124,6 +125,7 @@ export async function buildInvoiceFiles(id: string) {
     },
     c,
     await getLogo(),
+    await documentStyle(),
   );
   const xml = facturXml({ number, kind: inv.kind, issueDate: inv.issueDate ?? new Date(), dueDate: inv.dueDate, serviceDate: inv.serviceDate, label: inv.label, lines, discount: inv.discount, deducted: inv.deducted, notes: inv.notes, seller, buyer, vatExempt, iban: c.iban, quoteNumber: inv.quote?.number });
   const full = inv.number ? await embedFacturX(pdf, xml, number) : pdf;

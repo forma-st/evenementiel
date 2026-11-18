@@ -9,7 +9,7 @@ export default async function SettingsLayout({ children }: { children: React.Rea
   const admin = user.role === "ADMIN";
   const tabs = [
     { href: "/parametres/compte", label: "Mon compte" },
-    ...(admin || user.role === "MANAGER" ? [{ href: "/parametres/entreprise", label: "Entreprise" }, { href: "/parametres/comptabilite", label: "Comptabilité" }] : []),
+    ...(admin || user.role === "MANAGER" ? [{ href: "/parametres/entreprise", label: "Entreprise" }, { href: "/parametres/devis", label: "Mise en forme des devis" }, { href: "/parametres/comptabilite", label: "Comptabilité" }] : []),
     ...(admin ? [{ href: "/parametres/equipe", label: "Équipe" }, { href: "/parametres/droits", label: "Droits d'accès" }] : []),
     ...(p.canManageTags ? [{ href: "/parametres/etiquettes", label: "Étiquettes" }] : []),
     ...(admin || user.role === "MANAGER" ? [{ href: "/parametres/automatisations", label: "Automatisations" }, { href: "/parametres/emails", label: "Modèles d'e-mails" }] : []),

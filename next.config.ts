@@ -36,7 +36,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   async headers() {
     return [
-      { source: "/((?!demande$).*)", headers: [...common, { key: "Content-Security-Policy", value: csp("'self'") }, { key: "X-Frame-Options", value: "SAMEORIGIN" }] },
+      { source: "/((?!demande$|api/).*)", headers: [...common, { key: "Content-Security-Policy", value: csp("'self'") }, { key: "X-Frame-Options", value: "SAMEORIGIN" }] },
+      // API et fichiers (PDF affichés dans l'aperçu) : pas de CSP de page, mais affichage limité au site lui-même
+      { source: "/api/:path*", headers: [...common, { key: "X-Frame-Options", value: "SAMEORIGIN" }, { key: "Content-Security-Policy", value: "frame-ancestors 'self'" }] },
       // le formulaire de demande peut être intégré dans votre site (iframe)
       { source: "/demande", headers: [...common, { key: "Content-Security-Policy", value: csp("*") }] },
       // pages à lien secret : jamais indexées par les moteurs de recherche

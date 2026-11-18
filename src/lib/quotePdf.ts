@@ -4,6 +4,7 @@ import { quoteToPdf } from "./pdf";
 import { parseLines } from "./quotes";
 import { eventKind, servicesLabel } from "./presta";
 import { TZ } from "./format";
+import { getPdfStyle } from "./pdfStyle";
 
 const fullDate = (d: Date) => new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: TZ }).format(d);
 
@@ -24,6 +25,7 @@ export async function buildQuotePdf(quoteId: string) {
     },
     await getCompany(),
     await getLogo(),
+    await getPdfStyle(),
   );
   return { pdf, fileName: `devis-${q.number ?? q.id}.pdf`, quote: q };
 }
