@@ -30,17 +30,16 @@ const More = ({ href, children }: { href: string; children: React.ReactNode }) =
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ periode?: string; membre?: string; acces?: string }> }) {
   const user = await requireStaff();
-  const perms = await permsFor(user);
-  const sp = await searchParams;
+  const [perms, sp, company] = await Promise.all([permsFor(user), searchParams, getCompany()]);
   const period = (PERIODS.some((p) => p.id === sp.periode) ? sp.periode : "12m") as PeriodId;
   const team = perms.canViewTeamDashboard;
   const memberId = team ? sp.membre || null : user.id;
-  const teamChat = (await getCompany()).teamChat;
+  const teamChat = company.teamChat;
   const layout = readLayout(user.dashboardLayout, perms).filter((l) => teamChat || l.id !== "messages");
   const on = new Set(layout.map((l) => l.id));
   const needStats = ["kpis", "revenue", "pipeline", "tasksChart"].some((w) => on.has(w as WidgetId));
 
-  const [stats, members, myTasks, myEvents, recent, rows, signatures, answers, convs] = await Promise.all([
+  const [stats, members, myTasks, myEvents, recent, rows, signatures, answers, convs, upcoming, pays] = await Promise.all([
     needStats ? dashboardStats(memberId, period) : null,
     team ? db.user.findMany({ where: { role: { not: "CLIENT" }, active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }) : null,
     on.has("myTasks") ? db.task.findMany({ where: { assigneeId: user.id, status: { not: "FAIT" }, dueDate: { lt: addDays(startOfDay(), 8) } }, include: { client: true, dossier: true }, orderBy: { dueDate: "asc" }, take: 8 }) : [],
@@ -50,8 +49,6 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     on.has("signatures") ? db.signatureRequest.findMany({ where: { status: "EN_ATTENTE", client: clientWhere(user, perms), ...(memberId ? { createdById: memberId } : {}) }, select: { id: true, title: true, status: true, createdAt: true, expiresAt: true, client: { select: { name: true } }, signers: { select: { status: true, viewedAt: true } } }, orderBy: { createdAt: "desc" }, take: 6 }) : [],
     on.has("questionnaires") ? db.questionnaireAssignment.findMany({ where: { status: "COMPLETE", client: clientWhere(user, perms) }, include: { questionnaire: { select: { title: true } }, client: { select: { name: true } } }, orderBy: { submittedAt: "desc" }, take: 6 }) : [],
     on.has("messages") ? conversationsFor(user.id) : [],
-  ]);
-  const [upcoming, pays] = await Promise.all([
     on.has("upcoming") ? db.dossier.findMany({ where: { status: { in: ["OPTION", "CONFIRME"] }, eventStart: { gte: startOfDay(), lt: addDays(new Date(), 60) }, ...(memberId ? { assigneeId: memberId } : {}) }, include: { client: { select: { name: true } }, assignee: { select: { name: true } } }, orderBy: { eventStart: "asc" }, take: 8 }) : [],
     on.has("payments") ? db.payment.findMany({ where: { paidAt: null, dueDate: { lt: addDays(new Date(), 30) }, dossier: { status: { not: "PERDU" } } }, include: { dossier: { select: { id: true, title: true, client: { select: { name: true } } } } }, orderBy: { dueDate: "asc" }, take: 8 }) : [],
   ]);

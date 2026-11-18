@@ -18,13 +18,15 @@ import { archiveGallery, deleteFiles, deleteGallery, publishGallery, resetFavori
 export default async function GalleryAdmin({ params }: { params: Promise<{ id: string }> }) {
   await requireStaff();
   const { id } = await params;
-  const g = await db.gallery.findUnique({ where: { id }, include: { client: true, dossier: true, files: { orderBy: [{ position: "asc" }, { createdAt: "asc" }] } } });
+  const [g, data, rule] = await Promise.all([
+    db.gallery.findUnique({ where: { id }, include: { client: true, dossier: true, files: { orderBy: [{ position: "asc" }, { createdAt: "asc" }] } } }),
+    galleryFormData(),
+    db.automationRule.findFirst({ where: { trigger: "GALLERY_PUBLISHED", active: true } }),
+  ]);
   if (!g) notFound();
-  const data = await galleryFormData();
   const link = `${baseUrl()}/g/${g.token}`;
   const st = GALLERY_STATUSES[g.status];
   const total = g.files.reduce((a, f) => a + f.size, 0);
-  const rule = await db.automationRule.findFirst({ where: { trigger: "GALLERY_PUBLISHED", active: true } });
 
   return (
     <div className="space-y-6">

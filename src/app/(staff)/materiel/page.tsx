@@ -13,11 +13,25 @@ export default async function EquipmentPage() {
   await requireStaff();
   const items = await db.equipment.findMany({
     orderBy: [{ category: "asc" }, { name: "asc" }],
-    include: { bookings: { where: { dossier: { status: { in: ["OPTION", "CONFIRME"] }, eventStart: { gte: startOfDay() } } }, include: { dossier: { select: { id: true, reference: true, title: true, eventStart: true } } } } },
+    include: { bookings: { where: { dossier: { status: { in: ["OPTION", "CONFIRME"] }, eventStart: { gte: startOfDay() } } }, include: { dossier: { select: { id: true, reference: true, title: true, eventStart: true, eventEnd: true } } } } },
   });
+  // surréservations : prestations qui se chevauchent et dépassent le stock
+  const M = 8 * 36e5;
+  const over = (i: (typeof items)[number], b: (typeof items)[number]["bookings"][number]) => {
+    const s0 = b.dossier.eventStart!.getTime() - M, e0 = (b.dossier.eventEnd ?? b.dossier.eventStart!).getTime() + M;
+    const tot = i.bookings.filter((x) => x.dossier.eventStart && x.dossier.eventStart.getTime() < e0 && (x.dossier.eventEnd ?? x.dossier.eventStart).getTime() > s0).reduce((a, x) => a + x.quantity, 0);
+    return tot > i.quantity;
+  };
+  const alerts = items.flatMap((i) => i.bookings.filter((b) => b.dossier.eventStart && over(i, b)).map((b) => ({ i, b })));
   return (
     <div className="space-y-6">
       <PageHeader title="Parc matériel" subtitle="Inventaire et réservations : un avertissement apparaît sur la prestation si le stock ne suffit pas le même jour." />
+      {alerts.length > 0 && (
+        <div role="alert" className="rounded-xl border-2 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          <b>⛔ {alerts.length} réservation(s) dépassent le stock :</b>
+          <ul className="mt-1 list-disc pl-5">{alerts.map(({ i, b }) => <li key={i.id + b.dossierId}>{i.name} le {date(b.dossier.eventStart)} — <Link href={`/prestations/${b.dossier.id}#materiel`} className="underline">{b.dossier.reference} {b.dossier.title}</Link></li>)}</ul>
+        </div>
+      )}
       <form action={saveEquipment.bind(null, null)} className="card grid gap-2 p-5 sm:grid-cols-[1fr_170px_90px_1fr_auto]">
         <input name="name" required placeholder="Ex. Enceinte 15&quot; 1200 W" className="input" />
         <select name="category" className="input">{EQUIPMENT_CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select>
@@ -43,7 +57,7 @@ export default async function EquipmentPage() {
                     <button formAction={deleteEquipment.bind(null, i.id)} className="text-xs text-slate-400 hover:text-rose-600">✕</button>
                   </form>
                   {i.bookings.length > 0 && (
-                    <div className="mt-1 text-xs text-slate-500">Réservé : {i.bookings.map((b) => <Link key={b.dossierId} href={`/prestations/${b.dossier.id}`} className="mr-2 hover:text-link-600">{b.quantity}× le {date(b.dossier.eventStart)} ({b.dossier.reference})</Link>)}</div>
+                    <div className="mt-1 text-xs text-slate-500">Réservé : {i.bookings.map((b) => <Link key={b.dossierId} href={`/prestations/${b.dossier.id}#materiel`} className={`mr-2 ${over(i, b) ? "font-semibold text-rose-700" : "hover:text-link-600"}`}>{over(i, b) ? "⛔ " : ""}{b.quantity}× le {date(b.dossier.eventStart)} ({b.dossier.reference})</Link>)}</div>
                   )}
                 </li>
               ))}

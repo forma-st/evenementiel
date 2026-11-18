@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { Back, Badge, Card, Empty, PageHeader } from "@/components/ui";
 import { DOSSIER_STATUSES, date, dateTime, eur, quoteStatus, statusOf, time, TZ } from "@/lib/format";
-import { addNote, addPayment, deleteDossier, deletePayment, generatePayments, markPaymentPaid, sendEmailToClient, sendQuestionnaire, setDossierEquipment, setDossierStatus } from "../../actions";
+import { addNote, addPayment, deleteDossier, deletePayment, generatePayments, markPaymentPaid, sendEmailToClient, sendQuestionnaire, setDossierEquipment, removeDossierEquipment, setDossierStatus } from "../../actions";
 import { TaskBoard } from "@/components/TaskBoard";
 import { toRow } from "@/lib/tasks";
 import { EventList } from "@/components/EventList";
@@ -11,6 +11,8 @@ import { SignatureList } from "@/components/SignatureList";
 import { DeleteDossierButton } from "@/components/DeleteDossierButton";
 import { CopyLink } from "@/components/CopyLink";
 import { EmailComposer } from "@/components/EmailComposer";
+import { EquipmentPicker } from "@/components/EquipmentPicker";
+import { equipmentAvailability } from "@/lib/equipment";
 import { invoiceFromPayment } from "../../factures/actions";
 import { INVOICE_KINDS, INVOICE_STATUSES } from "@/lib/invoices";
 import { requireStaff } from "@/lib/auth";
@@ -26,10 +28,9 @@ const fullDate = (d: Date) => new Intl.DateTimeFormat("fr-FR", { weekday: "long"
 export default async function PrestationPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const me = await requireStaff();
-  await assertDossierVisible(me, id);
-  const perms = await permsFor(me);
+  const [, perms] = await Promise.all([assertDossierVisible(me, id), permsFor(me)]);
   const base = baseUrl();
-  const [d, questionnaires, users, equipment, templates, emails] = await Promise.all([
+  const [d, questionnaires, users, equipment, templates, emails, vars0] = await Promise.all([
     db.dossier.findUnique({
       where: { id },
       include: {
@@ -51,23 +52,18 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
     db.equipment.findMany({ where: { active: true }, orderBy: [{ category: "asc" }, { name: "asc" }] }),
     db.emailTemplate.findMany({ orderBy: { name: "asc" } }),
     db.emailLog.findMany({ where: { dossierId: id }, orderBy: { createdAt: "desc" }, take: 20 }),
+    varsForDossier(id).catch(() => null),
   ]);
   if (!d) notFound();
   const st = statusOf(d.status);
   const k = eventKind(d.eventType);
-  const vars = await varsForDossier(id);
+  const vars = vars0 ?? {};
   const paid = d.payments.filter((p) => p.paidAt).reduce((a, p) => a + p.amount, 0);
   const totalDue = d.payments.reduce((a, p) => a + p.amount, 0);
   const days = d.eventStart ? Math.ceil((d.eventStart.getTime() - Date.now()) / 864e5) : null;
 
-  // matériel réservé ailleurs le même jour (conflits de stock)
-  const sameDay = d.eventStart
-    ? await db.dossierEquipment.findMany({
-        where: { dossierId: { not: id }, dossier: { status: { in: ["OPTION", "CONFIRME"] }, eventStart: { gte: new Date(d.eventStart.getTime() - 14 * 36e5), lte: new Date(d.eventStart.getTime() + 14 * 36e5) } } },
-        select: { equipmentId: true, quantity: true },
-      })
-    : [];
-  const usedElsewhere = (eid: string) => sameDay.filter((x) => x.equipmentId === eid).reduce((a, x) => a + x.quantity, 0);
+  const availability = await equipmentAvailability(id, d.eventStart, d.eventEnd);
+  const overbooked = availability.filter((x) => x.overbooked);
 
   return (
     <div className="space-y-6">
@@ -91,6 +87,12 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
           </>
         }
       />
+
+      {overbooked.length > 0 && (
+        <div role="alert" className="rounded-xl border-2 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          <b>⛔ Conflit de matériel :</b> {overbooked.map((o) => `${o.name} (${o.mine} demandé(s), stock ${o.stock}, déjà pris par ${o.conflicts.map((c) => c.reference).join(", ")})`).join(" · ")}. <a href="#materiel" className="underline">Corriger</a>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {DOSSIER_STATUSES.map((s) => (
@@ -294,29 +296,11 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
             )}
           </Card>
 
-          <Card title="Matériel réservé">
-            {d.equipment.length === 0 ? <p className="mb-3 text-sm text-slate-500">Aucun matériel affecté.</p> : (
-              <ul className="mb-3 space-y-1.5 text-sm">
-                {d.equipment.map((x) => {
-                  const other = usedElsewhere(x.equipmentId);
-                  const short = other + x.quantity > x.equipment.quantity;
-                  return (
-                    <li key={x.equipmentId} className="flex items-center justify-between gap-2">
-                      <span>{x.quantity} × {x.equipment.name}{short && <span className="ml-1 text-xs font-medium text-rose-600" title={`${other} déjà pris le même jour, stock ${x.equipment.quantity}`}>⚠ stock insuffisant</span>}</span>
-                      <form action={setDossierEquipment.bind(null, id)}><input type="hidden" name="equipmentId" value={x.equipmentId} /><input type="hidden" name="quantity" value="0" /><button className="text-xs text-slate-400 hover:text-rose-600">✕</button></form>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+          <div id="materiel" className="scroll-mt-6"><Card title="Matériel réservé">
             {equipment.length > 0 ? (
-              <form action={setDossierEquipment.bind(null, id)} className="flex gap-2">
-                <select name="equipmentId" className="input text-sm">{equipment.map((e) => <option key={e.id} value={e.id}>{e.name} (stock {e.quantity}{usedElsewhere(e.id) ? `, ${usedElsewhere(e.id)} pris ce jour` : ""})</option>)}</select>
-                <input name="quantity" type="number" min={1} defaultValue={1} className="input w-16" />
-                <button className="btn-secondary">+</button>
-              </form>
+              <EquipmentPicker items={availability} action={setDossierEquipment.bind(null, id)} remove={removeDossierEquipment.bind(null, id)} dated={!!d.eventStart} />
             ) : <p className="text-sm text-slate-500"><Link href="/materiel" className="text-link-600">Ajoutez votre parc matériel</Link>.</p>}
-          </Card>
+          </Card></div>
 
           <Card title="Agenda">
             <EventList events={d.events} newHref={`/agenda/nouveau?clientId=${d.clientId}&dossierId=${id}`} />

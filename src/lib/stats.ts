@@ -44,6 +44,12 @@ function memberFilters(memberId: string | null) {
   };
 }
 
+/** Début de la fenêtre de 8 semaines du graphique des tâches. */
+function weekStartMinus(today: Date) {
+  const weekStart = new Date(today.getTime() - ((new Date(today.getTime() + 12 * 36e5).getUTCDay() + 6) % 7) * 864e5);
+  return new Date(weekStart.getTime() - 7 * 7 * 864e5);
+}
+
 const SENT = ["ENVOYE", "ACCEPTE", "REFUSE", "EXPIRE"];
 
 export async function dashboardStats(memberId: string | null, period: PeriodId) {
@@ -52,7 +58,7 @@ export async function dashboardStats(memberId: string | null, period: PeriodId) 
   const today = startOfDay();
   const inRange = (a: Date, b: Date) => ({ gte: a, lt: b });
 
-  const [sent, accepted, prevAccepted, newClients, prevNewClients, doneTasks, lateTasks, upcomingEvents, pipeline] = await Promise.all([
+  const countsP = Promise.all([
     db.quote.aggregate({ where: { ...f.quote, status: { in: SENT }, issuedAt: inRange(start, end) }, _sum: { totalHT: true }, _count: true }),
     db.quote.aggregate({ where: { ...f.quote, status: "ACCEPTE", issuedAt: inRange(start, end) }, _sum: { totalHT: true }, _count: true }),
     db.quote.aggregate({ where: { ...f.quote, status: "ACCEPTE", issuedAt: inRange(prevStart, prevEnd) }, _sum: { totalHT: true } }),
@@ -71,10 +77,15 @@ export async function dashboardStats(memberId: string | null, period: PeriodId) 
     const y = Math.floor(idx / 12), m = (idx % 12) + 1;
     return { key: `${y}-${pad(m)}`, label: `${MONTHS[m - 1]}${m === 1 || i === 0 ? ` ${String(y).slice(2)}` : ""}`, sent: 0, accepted: 0 };
   });
-  const quotes = await db.quote.findMany({
+  const quotesP = db.quote.findMany({
     where: { ...f.quote, status: { in: SENT }, issuedAt: { gte: fromParis(`${months[0].key}-01`) } },
     select: { issuedAt: true, totalHT: true, status: true },
   });
+  const listsP = Promise.all([
+    db.task.findMany({ where: { ...f.task, status: "FAIT", completedAt: { gte: weekStartMinus(today) } }, select: { completedAt: true } }),
+    db.task.findMany({ where: { ...f.task, createdAt: { gte: weekStartMinus(today) } }, select: { createdAt: true } }),
+  ]);
+  const [[sent, accepted, prevAccepted, newClients, prevNewClients, doneTasks, lateTasks, upcomingEvents, pipeline], quotes, [doneList, createdList]] = await Promise.all([countsP, quotesP, listsP]);
   for (const q of quotes) {
     const p = parisParts(q.issuedAt);
     const b = months.find((x) => x.key === `${p.y}-${pad(p.m)}`);
@@ -90,10 +101,6 @@ export async function dashboardStats(memberId: string | null, period: PeriodId) 
     const p = parisParts(new Date(s.getTime() + 12 * 36e5));
     return { start: s, end: new Date(s.getTime() + 7 * 864e5), label: `${p.d} ${MONTHS[p.m - 1]}`, done: 0, created: 0 };
   });
-  const [doneList, createdList] = await Promise.all([
-    db.task.findMany({ where: { ...f.task, status: "FAIT", completedAt: { gte: weeks[0].start } }, select: { completedAt: true } }),
-    db.task.findMany({ where: { ...f.task, createdAt: { gte: weeks[0].start } }, select: { createdAt: true } }),
-  ]);
   for (const x of doneList) { const w = weeks.find((w) => x.completedAt! >= w.start && x.completedAt! < w.end); if (w) w.done++; }
   for (const x of createdList) { const w = weeks.find((w) => x.createdAt >= w.start && x.createdAt < w.end); if (w) w.created++; }
 

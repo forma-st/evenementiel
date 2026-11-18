@@ -13,8 +13,8 @@
   --color-link-600: #2563eb;
   --color-link-700: #1d4ed8;
   --color-ink: #1e1b2e;
-  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Outfit", "Figtree", ui-sans-serif, sans-serif;
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-outfit), var(--font-figtree), ui-sans-serif, sans-serif;
 }
 
 h1, h2, h3 { font-family: var(--font-display); }
@@ -38,3 +38,7 @@ body { @apply bg-slate-50 text-ink antialiased; }
 }
 
 @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+@keyframes activity { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+.activity-bar { animation: activity 1.1s ease-in-out infinite; }
+button:disabled { cursor: progress; }

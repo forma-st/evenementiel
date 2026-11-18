@@ -10,6 +10,8 @@ import { createPaymentSchedule } from "@/lib/automations";
 import { render, varsForDossier } from "@/lib/merge";
 import { sendMail } from "@/lib/mail";
 import { refreshInvoiceStatus } from "@/lib/invoiceStatus";
+import { equipmentAvailability } from "@/lib/equipment";
+import { eventKind } from "@/lib/presta";
 import type { Field } from "@/lib/questionnaire";
 import { assertClientVisible, assertDossierVisible, requirePerm } from "@/lib/permissions";
 import { notify } from "@/lib/notify";
@@ -161,9 +163,36 @@ function dossierData(f: FormData) {
   };
 }
 
+/** Client choisi, ou créé à la volée depuis le formulaire de prestation (réutilisé si l'e-mail existe déjà). */
+async function resolveClient(f: FormData, ownerId: string) {
+  const id = s(f, "clientId");
+  if (id && id !== "__new__") return id;
+  const name = s(f, "newClientName");
+  if (!name) throw new Error("Indiquez le nom du nouveau client.");
+  const email = s(f, "newClientEmail")?.toLowerCase() ?? null;
+  if (email) {
+    const ex = await db.client.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true } });
+    if (ex) return ex.id;
+  }
+  const c = await db.client.create({
+    data: {
+      type: s(f, "newClientType") === "COMPANY" ? "COMPANY" : "INDIVIDUAL", name, email, phone: s(f, "newClientPhone"),
+      address: s(f, "newClientAddress"), postalCode: s(f, "newClientPostalCode"), city: s(f, "newClientCity"),
+      siren: s(f, "newClientSiren")?.replace(/\s/g, "") ?? null, ownerId,
+    },
+  });
+  return c.id;
+}
+
 export async function createDossier(f: FormData) {
   const user = await requireStaff();
-  const d = await db.dossier.create({ data: { ...dossierData(f), reference: await nextReference() } });
+  const clientId = await resolveClient(f, user.id);
+  const data = dossierData(f);
+  if (!s(f, "title")) {
+    const cl = await db.client.findUnique({ where: { id: clientId }, select: { name: true } });
+    data.title = `${eventKind(data.eventType).label} — ${cl?.name ?? "client"}`;
+  }
+  const d = await db.dossier.create({ data: { ...data, clientId, reference: await nextReference() } });
   await notify([d.assigneeId], { type: "TASK", title: `${user.name} vous a confié la prestation « ${d.title} »`, link: `/prestations/${d.id}` }, user.id);
   await db.activity.create({ data: { dossierId: d.id, userId: user.id, kind: "STATUS", body: "Prestation créée" } });
   await syncPrestationEvent(d.id);
@@ -175,7 +204,7 @@ export async function updateDossier(id: string, f: FormData) {
   const user = await requireStaff();
   await assertDossierVisible(user, id);
   const before = await db.dossier.findUniqueOrThrow({ where: { id } });
-  const d = await db.dossier.update({ where: { id }, data: dossierData(f) });
+  const d = await db.dossier.update({ where: { id }, data: { ...dossierData(f), clientId: await resolveClient(f, user.id) } });
   if (d.assigneeId !== before.assigneeId)
     await notify([d.assigneeId], { type: "TASK", title: `${user.name} vous a confié la prestation « ${d.title} »`, link: `/prestations/${d.id}` }, user.id);
   if (d.eventStart?.getTime() !== before.eventStart?.getTime() && before.eventStart)
@@ -265,14 +294,39 @@ export async function generatePayments(dossierId: string) {
 
 // ---------------- Matériel réservé ----------------
 
-export async function setDossierEquipment(dossierId: string, f: FormData) {
+export type EquipmentState = { error?: string; ok?: string } | null;
+
+/**
+ * Ajout ou changement de quantité d'un matériel sur une prestation, refusé si :
+ * - le matériel est déjà sur la prestation (mode « ajout ») ;
+ * - la quantité dépasse le stock encore libre sur le créneau (autres prestations en option ou confirmées).
+ */
+export async function setDossierEquipment(dossierId: string, _: EquipmentState, f: FormData): Promise<EquipmentState> {
   const user = await requireStaff();
   await assertDossierVisible(user, dossierId);
   const equipmentId = s(f, "equipmentId");
   const quantity = Math.max(0, Math.round(Number(s(f, "quantity") || "1")));
-  if (!equipmentId) return;
+  const mode = s(f, "mode") === "update" ? "update" : "add";
+  if (!equipmentId) return { error: "Choisissez un matériel." };
+  const d = await db.dossier.findUniqueOrThrow({ where: { id: dossierId }, select: { eventStart: true, eventEnd: true } });
+  const av = (await equipmentAvailability(dossierId, d.eventStart, d.eventEnd)).find((x) => x.id === equipmentId);
+  if (!av) return { error: "Matériel introuvable ou désactivé." };
+  if (mode === "add" && av.mine > 0) return { error: `« ${av.name} » est déjà réservé sur cette prestation (${av.mine}). Modifiez la quantité dans la liste au lieu de l'ajouter une deuxième fois.` };
+  const free = av.stock - av.elsewhere;
+  if (quantity > free) {
+    const who = av.conflicts.map((c) => `${c.reference} « ${c.title} » (${c.quantity})`).join(", ");
+    return { error: free <= 0 ? `« ${av.name} » n'est plus disponible sur ce créneau : tout le stock (${av.stock}) est réservé par ${who}.` : `Seulement ${free} « ${av.name} » disponible(s) sur ce créneau (stock ${av.stock}${who ? `, déjà pris par ${who}` : ""}).` };
+  }
   if (!quantity) await db.dossierEquipment.deleteMany({ where: { dossierId, equipmentId } });
   else await db.dossierEquipment.upsert({ where: { dossierId_equipmentId: { dossierId, equipmentId } }, update: { quantity }, create: { dossierId, equipmentId, quantity } });
+  revalidatePath(`/prestations/${dossierId}`);
+  return { ok: quantity ? `${quantity} × ${av.name} réservé(s).` : `${av.name} retiré.` };
+}
+
+export async function removeDossierEquipment(dossierId: string, equipmentId: string) {
+  const user = await requireStaff();
+  await assertDossierVisible(user, dossierId);
+  await db.dossierEquipment.deleteMany({ where: { dossierId, equipmentId } });
   revalidatePath(`/prestations/${dossierId}`);
 }
 

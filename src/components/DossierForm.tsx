@@ -3,6 +3,7 @@ import { DOSSIER_STATUSES, PRIORITIES, parisParts } from "@/lib/format";
 import { EVENT_KINDS, SERVICES, SOURCES, parseServices } from "@/lib/presta";
 import { Field } from "./ui";
 import { DateCheck } from "./DateCheck";
+import { ClientPicker } from "./ClientPicker";
 
 const hm = (d: Date | null | undefined) => (d ? `${String(parisParts(d).h).padStart(2, "0")}:${String(parisParts(d).min).padStart(2, "0")}` : "");
 
@@ -20,14 +21,9 @@ export function DossierForm({ action, dossier, clients, users, defaultClientId, 
       <section className="card grid gap-4 p-6 sm:grid-cols-2">
         <h2 className="font-semibold sm:col-span-2">L&apos;événement</h2>
         <div className="sm:col-span-2">
-          <Field label="Intitulé *"><input name="title" required defaultValue={dossier?.title} placeholder="Mariage de Julie & Thomas" className="input" /></Field>
+          <Field label={dossier ? "Intitulé *" : "Intitulé (facultatif : « Type — Client » par défaut)"}><input name="title" required={!!dossier} defaultValue={dossier?.title} placeholder="Mariage de Julie & Thomas" className="input" /></Field>
         </div>
-        <Field label="Client *">
-          <select name="clientId" required defaultValue={dossier?.clientId ?? defaultClientId ?? ""} className="input">
-            <option value="" disabled>Choisir…</option>
-            {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </Field>
+        <div className="sm:row-span-2"><ClientPicker clients={clients} defaultValue={dossier?.clientId ?? defaultClientId} /></div>
         <Field label="Type d'événement">
           <select name="eventType" defaultValue={dossier?.eventType ?? "MARIAGE"} className="input">
             {EVENT_KINDS.map((k) => <option key={k.id} value={k.id}>{k.icon} {k.label}</option>)}

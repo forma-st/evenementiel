@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
@@ -27,7 +28,7 @@ export async function destroySession() {
   (await cookies()).delete(COOKIE);
 }
 
-export async function currentUser() {
+export const currentUser = cache(async function currentUser() {
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return null;
   try {
@@ -38,7 +39,7 @@ export async function currentUser() {
   } catch {
     return null;
   }
-}
+});
 
 /** Accès équipe (ADMIN ou MEMBER). Les clients sont renvoyés vers leur portail. */
 export async function requireStaff() {

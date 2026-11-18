@@ -20,12 +20,10 @@ export default async function Accounting({ searchParams }: { searchParams: Promi
   const sp = await searchParams;
   const now = new Date();
   const year = Number(sp.annee) || parisParts(now).y;
-  const s = await getUrssaf();
-  const r = ratesOf(s);
-  const act = ACTIVITIES[s.activity];
   const yStart = fromParis(`${year}-01-01`), yEnd = fromParis(`${year + 1}-01-01`);
 
-  const [yearCA, prevCA, months, decls, expenses, unpaid, toFile] = await Promise.all([
+  const [s, yearCA, prevCA, months, decls, expenses, unpaid, toFile] = await Promise.all([
+    getUrssaf(),
     turnoverBetween(yStart, yEnd),
     turnoverBetween(fromParis(`${year - 1}-01-01`), yStart),
     Promise.all(Array.from({ length: 12 }, (_, i) => turnoverBetween(fromParis(`${year}-${String(i + 1).padStart(2, "0")}-01`), i === 11 ? yEnd : fromParis(`${year}-${String(i + 2).padStart(2, "0")}-01`)))),
@@ -34,10 +32,15 @@ export default async function Accounting({ searchParams }: { searchParams: Promi
     db.invoice.findMany({ where: { status: "EMISE", kind: { not: "AVOIR" } }, include: { payments: true } }),
     db.invoice.count({ where: { einvoiceStatus: "A_DEPOSER", status: { not: "BROUILLON" }, client: { type: "COMPANY" } } }),
   ]);
-  const periods = await Promise.all(periodsOfYear(year, s.frequency, s.creationDate).map(async (p) => {
-    const ca = await turnoverBetween(p.start, p.end);
+  const r = ratesOf(s);
+  const act = ACTIVITIES[s.activity];
+  // CA d'une période = somme des mois concernés (déjà chargés)
+  const periods = periodsOfYear(year, s.frequency, s.creationDate).map((p) => {
+    const [, ps] = p.id.split("-");
+    const idx = ps.startsWith("T") ? [0, 1, 2].map((k) => (Number(ps.slice(1)) - 1) * 3 + k) : [Number(ps) - 1];
+    const ca = Math.round(idx.reduce((a, i) => a + months[i], 0) * 100) / 100;
     return { ...p, ca, c: contributionsFor(ca, s, p.end), d: decls.find((x) => x.period === p.id) };
-  }));
+  });
   const contribYear = periods.reduce((a, p) => a + (p.d ? p.d.contributions + p.d.cfp + p.d.incomeTax : p.c.total), 0);
   const ceil = ceilingFor(s, year);
   const pctCeil = Math.min(100, (yearCA / ceil.ceiling) * 100);

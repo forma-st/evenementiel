@@ -11,12 +11,11 @@ export const metadata = { title: "Factures" };
 export default async function Invoices({ searchParams }: { searchParams: Promise<{ statut?: string; pa?: string }> }) {
   await pagePerm(await requireStaff(), "canViewQuotes");
   const sp = await searchParams;
-  const list = await db.invoice.findMany({
+  const [list, toFile] = await Promise.all([db.invoice.findMany({
     where: { ...(sp.statut ? { status: sp.statut } : {}), ...(sp.pa ? { einvoiceStatus: "A_DEPOSER", status: { not: "BROUILLON" } } : {}) },
     include: { client: { select: { name: true, type: true } }, dossier: { select: { id: true, reference: true } }, payments: { select: { amount: true, paidAt: true } } },
     orderBy: [{ issueDate: { sort: "desc", nulls: "first" } }, { createdAt: "desc" }],
-  });
-  const toFile = await db.invoice.count({ where: { einvoiceStatus: "A_DEPOSER", status: { not: "BROUILLON" } } });
+  }), db.invoice.count({ where: { einvoiceStatus: "A_DEPOSER", status: { not: "BROUILLON" } } })]);
   const due = list.filter((i) => i.status === "EMISE" && i.kind !== "AVOIR").reduce((a, i) => a + i.totalTTC - i.deducted - i.payments.filter((p) => p.paidAt).reduce((x, p) => x + p.amount, 0), 0);
   return (
     <div>
