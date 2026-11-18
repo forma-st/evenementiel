@@ -94,7 +94,7 @@ export default async function TasksPage({ searchParams }: {
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {FILTERS.map((f) => (
-          <Link key={f.id} href={qs({ filtre: f.id })} className={`badge px-3 py-1.5 text-sm ${filtre === f.id ? "bg-ink text-white" : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}>
+          <Link key={f.id} href={qs({ filtre: f.id })} className={`badge px-3 py-1.5 text-sm ${filtre === f.id ? "bg-ink text-paper" : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}>
             {f.label}
           </Link>
         ))}

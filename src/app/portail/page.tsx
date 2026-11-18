@@ -6,6 +6,7 @@ import { Badge, Card, Empty } from "@/components/ui";
 import { date, eur, quoteStatus, statusOf, time, TZ } from "@/lib/format";
 import { eventKind, servicesLabel } from "@/lib/presta";
 import { getCompany } from "@/lib/company";
+import { ThemeSwitch } from "@/components/ThemeSwitch";
 
 const fullDate = (d: Date) => new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: TZ }).format(d);
 
@@ -31,10 +32,10 @@ export default async function Portal() {
   const galleries = client.galleries.filter((g) => !g.expiresAt || g.expiresAt > new Date());
   return (
     <div className="min-h-screen">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-4"><Logo className="h-9" /><div className="border-l border-slate-200 pl-4"><div className="font-semibold">Espace client</div><div className="text-sm text-slate-500">{client.name}</div></div></div>
-          <form action="/logout" method="post"><button className="text-sm text-slate-500 hover:text-slate-800">Se déconnecter</button></form>
+          <div className="flex items-center gap-3"><ThemeSwitch compact /><form action="/logout" method="post"><button className="text-sm text-slate-500 hover:text-slate-800">Se déconnecter</button></form></div>
         </div>
       </header>
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">

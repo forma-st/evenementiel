@@ -56,7 +56,7 @@ export default async function Accounting({ searchParams }: { searchParams: Promi
       <PageHeader
         title="Comptabilité"
         subtitle={<>Micro-entreprise · {act.label.split(" — ")[0]} · déclaration {s.frequency.toLowerCase()} · <Link href="/parametres/comptabilite" className="text-link-600 hover:underline">réglages</Link></>}
-        actions={<div className="flex gap-1">{[year - 1, year, year + 1].filter((y) => y <= parisParts(now).y).map((y) => <Link key={y} href={`/comptabilite?annee=${y}`} className={`badge px-3 py-1.5 ${y === year ? "bg-slate-800 text-white" : "border border-slate-200 bg-white"}`}>{y}</Link>)}</div>}
+        actions={<div className="flex gap-1">{[year - 1, year, year + 1].filter((y) => y <= parisParts(now).y).map((y) => <Link key={y} href={`/comptabilite?annee=${y}`} className={`badge px-3 py-1.5 ${y === year ? "bg-ink text-paper" : "border border-slate-200 bg-white"}`}>{y}</Link>)}</div>}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

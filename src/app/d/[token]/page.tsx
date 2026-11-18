@@ -30,7 +30,7 @@ export default async function PublicQuote({ params }: { params: Promise<{ token:
   const expired = q.validUntil < new Date() && q.status !== "ACCEPTE";
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8">
+    <div className="min-h-screen px-4 py-8">
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex items-center justify-between gap-4">
           <Logo className="h-11" />

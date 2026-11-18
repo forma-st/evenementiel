@@ -3,8 +3,8 @@ import { useMemo, useState } from "react";
 
 /* Palette catégorielle validée (ordre fixe, jamais recyclé) : bleu, orange. */
 export const SERIES = ["#2a78d6", "#eb6834"] as const;
-const GRID = "#e7e5e4";
-const AXIS = "#78716c";
+const GRID = "var(--color-slate-200)";
+const AXIS = "var(--color-slate-500)";
 
 type Series = { key: string; label: string };
 type Row = { label: string } & Record<string, number | string>;
@@ -96,8 +96,8 @@ export function GroupedBars({ rows, series, format, axisFormat, first = "Périod
           <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`${series.map((s) => s.label).join(" et ")} par ${first.toLowerCase()}`}>
             {ticks.map((t) => (
               <g key={t}>
-                <line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke={GRID} strokeWidth={1} />
-                <text x={L - 8} y={y(t)} dy="0.32em" textAnchor="end" fontSize={11} fill={AXIS}>{fmtAxis(t)}</text>
+                <line x1={L} x2={W - R} y1={y(t)} y2={y(t)} style={{ stroke: GRID }} strokeWidth={1} />
+                <text x={L - 8} y={y(t)} dy="0.32em" textAnchor="end" fontSize={11} style={{ fill: AXIS }}>{fmtAxis(t)}</text>
               </g>
             ))}
             {rows.map((r, i) => {
@@ -108,12 +108,12 @@ export function GroupedBars({ rows, series, format, axisFormat, first = "Périod
                     const v = Number(r[s.key]);
                     return <path key={s.key} d={barPath(x0 + k * (barW + gap), y(v), barW, T + plotH - y(v))} fill={SERIES[k]} />;
                   })}
-                  <text x={L + i * band + band / 2} y={H - 8} textAnchor="middle" fontSize={11} fill={AXIS}>{r.label}</text>
+                  <text x={L + i * band + band / 2} y={H - 8} textAnchor="middle" fontSize={11} style={{ fill: AXIS }}>{r.label}</text>
                   <rect x={L + i * band} y={T} width={band} height={plotH} fill="transparent" onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} />
                 </g>
               );
             })}
-            <line x1={L} x2={W - R} y1={T + plotH} y2={T + plotH} stroke={AXIS} strokeWidth={1} />
+            <line x1={L} x2={W - R} y1={T + plotH} y2={T + plotH} style={{ stroke: AXIS }} strokeWidth={1} />
           </svg>
           {empty && <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-slate-400">Pas encore de données sur cette période</div>}
           {hover !== null && (

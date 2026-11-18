@@ -21,8 +21,8 @@ export default async function Invoices({ searchParams }: { searchParams: Promise
     <div>
       <PageHeader title="Factures" subtitle={`${list.length} document(s) · reste à encaisser ${eur(due)}`} actions={<><Link href="/comptabilite" className="btn-secondary">Comptabilité</Link><Link href="/factures/nouvelle" className="btn-primary">+ Facture libre</Link></>} />
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
-        <Link href="/factures" className={`badge px-3 py-1.5 ${!sp.statut && !sp.pa ? "bg-slate-800 text-white" : "border border-slate-200 bg-white"}`}>Toutes</Link>
-        {Object.entries(INVOICE_STATUSES).map(([k, v]) => <Link key={k} href={`/factures?statut=${k}`} className={`badge px-3 py-1.5 ${sp.statut === k ? "bg-slate-800 text-white" : "border border-slate-200 bg-white"}`}>{v.label}</Link>)}
+        <Link href="/factures" className={`badge px-3 py-1.5 ${!sp.statut && !sp.pa ? "bg-ink text-paper" : "border border-slate-200 bg-white"}`}>Toutes</Link>
+        {Object.entries(INVOICE_STATUSES).map(([k, v]) => <Link key={k} href={`/factures?statut=${k}`} className={`badge px-3 py-1.5 ${sp.statut === k ? "bg-ink text-paper" : "border border-slate-200 bg-white"}`}>{v.label}</Link>)}
         <Link href="/factures?pa=1" className={`badge px-3 py-1.5 ${sp.pa ? "bg-amber-600 text-white" : "border border-amber-300 bg-amber-50 text-amber-800"}`}>À déposer sur la plateforme ({toFile})</Link>
       </div>
       <div className="card overflow-x-auto">

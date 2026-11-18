@@ -18,9 +18,9 @@ export default async function QuotesPage({ searchParams }: { searchParams: Promi
     <div>
       <PageHeader title="Devis" subtitle={`${quotes.length} devis · ${eur(total)} HT`} actions={<Link href="/devis/nouveau" className="btn-primary">+ Nouveau devis</Link>} />
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
-        <Link href="/devis" className={`badge px-3 py-1.5 ${!status ? "bg-slate-800 text-white" : "bg-white border border-slate-200"}`}>Tous</Link>
+        <Link href="/devis" className={`badge px-3 py-1.5 ${!status ? "bg-ink text-paper" : "bg-white border border-slate-200"}`}>Tous</Link>
         {Object.entries(QUOTE_STATUSES).filter(([k]) => !["ERREUR"].includes(k)).map(([k, v]) => (
-          <Link key={k} href={`/devis?status=${k}`} className={`badge px-3 py-1.5 ${status === k ? "bg-slate-800 text-white" : "bg-white border border-slate-200"}`}>{v.label}</Link>
+          <Link key={k} href={`/devis?status=${k}`} className={`badge px-3 py-1.5 ${status === k ? "bg-ink text-paper" : "bg-white border border-slate-200"}`}>{v.label}</Link>
         ))}
       </div>
       <div className="card overflow-x-auto">

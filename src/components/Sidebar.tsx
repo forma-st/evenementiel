@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
+import { ThemeSwitch } from "@/components/ThemeSwitch";
 
 export type Badges = { lateTasks: number; unreadMessages: number; unreadNotifs: number };
 
@@ -51,10 +52,11 @@ export function Sidebar({ user, mail, badges: initial, show }: {
   const active = (h: string) => (h === "/" ? path === "/" : path.startsWith(h));
 
   return (
-    <aside className="flex w-full shrink-0 flex-col print:hidden border-b border-slate-200 bg-white md:sticky md:top-0 md:h-screen md:w-60 md:border-r md:border-b-0">
+    <aside className="flex w-full shrink-0 flex-col print:hidden border-b border-slate-200 bg-white/80 backdrop-blur-xl md:sticky md:top-0 md:h-screen md:w-60 md:border-r md:border-b-0">
       <div className="flex items-center justify-between gap-3 px-5 py-4 md:block">
         <Logo className="h-9" />
         <div className="text-[11px] font-semibold tracking-[0.2em] text-slate-400 uppercase md:mt-2">Événementiel</div>
+        <div className="md:hidden"><ThemeSwitch compact /></div>
       </div>
       <nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:overflow-y-auto md:pb-0">
         {items.map((i) => {
@@ -77,6 +79,7 @@ export function Sidebar({ user, mail, badges: initial, show }: {
         })}
       </nav>
       <div className="mt-auto hidden border-t border-slate-100 p-4 text-sm md:block">
+        <div className="mb-3"><ThemeSwitch full /></div>
         <div className={`mb-3 rounded-lg px-3 py-2 text-xs ${mail ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}>
           E-mails : {mail ? "envoi activé" : "mode simulation"}
         </div>

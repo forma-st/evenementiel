@@ -45,7 +45,7 @@ export function GalleryView({ token, kind, files: initial, allowDownload, allowF
           <button onClick={async () => { const r = await submitSelection(token); setSent(r.ok ? `Merci ! Votre sélection de ${r.n} photo(s) a été transmise.` : r.error ?? "Erreur"); }} className="rounded-full border border-rose-500 px-4 py-2 text-sm text-rose-300 hover:bg-rose-500/10">Valider ma sélection</button>
         )}
         {allowDownload && favCount > 0 && <a href={`/api/g/${token}/zip?favoris=1`} className="rounded-full border border-zinc-600 px-4 py-2 text-sm hover:bg-zinc-800">⬇ Favorites (ZIP)</a>}
-        {allowDownload && files.length > 0 && <a href={`/api/g/${token}/zip`} className="rounded-full bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200">⬇ Tout télécharger</a>}
+        {allowDownload && files.length > 0 && <a href={`/api/g/${token}/zip`} className="rounded-full bg-[#fff] px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200">⬇ Tout télécharger</a>}
       </div>
       {sent && <p className="mb-4 rounded-lg bg-emerald-500/15 px-4 py-2 text-sm text-emerald-300">{sent}</p>}
 

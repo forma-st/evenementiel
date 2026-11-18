@@ -23,9 +23,9 @@ export default async function Signatures({ searchParams }: { searchParams: Promi
     <div>
       <PageHeader title="Signatures électroniques" subtitle={`${list.length} demande(s)`} actions={<Link href="/signatures/nouveau" className="btn-primary">✍ Nouvelle demande de signature</Link>} />
       <div className="mb-4 flex flex-wrap gap-2 text-sm">
-        <Link href="/signatures" className={`badge px-3 py-1.5 ${!statut ? "bg-ink text-white" : "border border-slate-200 bg-white"}`}>Toutes</Link>
+        <Link href="/signatures" className={`badge px-3 py-1.5 ${!statut ? "bg-ink text-paper" : "border border-slate-200 bg-white"}`}>Toutes</Link>
         {Object.entries(SIGNATURE_STATUSES).map(([k, v]) => (
-          <Link key={k} href={`/signatures?statut=${k}`} className={`badge px-3 py-1.5 ${statut === k ? "bg-ink text-white" : "border border-slate-200 bg-white"}`}>{v.label}</Link>
+          <Link key={k} href={`/signatures?statut=${k}`} className={`badge px-3 py-1.5 ${statut === k ? "bg-ink text-paper" : "border border-slate-200 bg-white"}`}>{v.label}</Link>
         ))}
       </div>
       <div className="card overflow-x-auto">

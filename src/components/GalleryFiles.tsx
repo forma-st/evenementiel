@@ -22,7 +22,7 @@ export function GalleryFiles({ files, coverId, onDelete, onCover }: {
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
-        <button type="button" onClick={() => setOnlyFav(false)} className={`badge px-3 py-1.5 ${!onlyFav ? "bg-slate-800 text-white" : "border border-slate-200"}`}>Tous ({files.length})</button>
+        <button type="button" onClick={() => setOnlyFav(false)} className={`badge px-3 py-1.5 ${!onlyFav ? "bg-ink text-paper" : "border border-slate-200"}`}>Tous ({files.length})</button>
         <button type="button" onClick={() => setOnlyFav(true)} className={`badge px-3 py-1.5 ${onlyFav ? "bg-rose-600 text-white" : "border border-slate-200"}`}>♥ Sélection du client ({favCount})</button>
         {onlyFav && favCount > 0 && (
           <button type="button" onClick={() => navigator.clipboard.writeText(files.filter((f) => f.favorite).map((f) => f.name).join("\n"))} className="text-xs text-link-600 hover:underline">Copier la liste des noms (pour Lightroom)</button>

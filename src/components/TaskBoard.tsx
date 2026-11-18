@@ -284,7 +284,7 @@ function ColorSelect({ value, options, onChange }: {
 function Avatar({ name }: { name?: string }) {
   if (!name) return <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-300 text-[10px] text-slate-400">?</span>;
   const initials = name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
-  return <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-[10px] font-semibold text-white">{initials}</span>;
+  return <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-[10px] font-semibold text-paper">{initials}</span>;
 }
 
 /* ---------------- Vue Kanban ---------------- */

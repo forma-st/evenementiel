@@ -114,7 +114,7 @@ export function ChatDock() {
 
       {open && (
         <section className="flex h-[min(560px,calc(100vh-6rem))] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" aria-label="Messages et notifications">
-          <header className="flex items-center gap-2 border-b border-slate-200 bg-ink px-3 py-2 text-white">
+          <header className="flex items-center gap-2 border-b border-slate-200 bg-ink px-3 py-2 text-paper">
             {conv && tab === "messages" ? (
               <>
                 <button onClick={() => setActive(null)} className="rounded px-1.5 hover:bg-white/10" aria-label="Retour">‹</button>

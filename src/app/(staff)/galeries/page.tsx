@@ -31,7 +31,7 @@ export default async function Galleries({ searchParams }: { searchParams: Promis
       />
       <div className="mb-4 flex gap-2 text-sm">
         {[["", "Tout"], ["GALERIE", "Galeries"], ["TRANSFERT", "Transferts"]].map(([k, l]) => (
-          <Link key={k} href={k ? `/galeries?type=${k}` : "/galeries"} className={`badge px-3 py-1.5 ${(type ?? "") === k ? "bg-slate-800 text-white" : "border border-slate-200 bg-white"}`}>{l}</Link>
+          <Link key={k} href={k ? `/galeries?type=${k}` : "/galeries"} className={`badge px-3 py-1.5 ${(type ?? "") === k ? "bg-ink text-paper" : "border border-slate-200 bg-white"}`}>{l}</Link>
         ))}
       </div>
       {list.length === 0 ? <div className="card"><Empty>Aucune galerie pour le moment.</Empty></div> : (

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function LeadPage() {
   const c = await getCompany();
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-10">
+    <div className="min-h-screen px-4 py-10">
       <div className="mx-auto max-w-2xl">
         <div className="mb-6 flex justify-center"><Logo className="h-12" /></div>
         <div className="card p-6 sm:p-8">

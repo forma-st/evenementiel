@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Figtree, Outfit } from "next/font/google";
+import { THEME_SCRIPT } from "@/components/ThemeSwitch";
 
 // polices servies par le site lui-même (pas d'appel à Google au chargement)
 const figtree = Figtree({ subsets: ["latin"], variable: "--font-figtree", display: "swap" });
@@ -11,11 +12,16 @@ export const metadata: Metadata = {
   description: "Devis, contrats, agenda, galeries photo et automatisations pour DJ, sonorisation et photographes",
 };
 
-export const viewport: Viewport = { themeColor: "#6d28d9" };
+export const viewport: Viewport = {
+  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#f6f4fb" }, { media: "(prefers-color-scheme: dark)", color: "#0e0b17" }],
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${figtree.variable} ${outfit.variable}`}>
+    <html lang="fr" data-theme="system" className={`${figtree.variable} ${outfit.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body>{children}</body>
     </html>
   );

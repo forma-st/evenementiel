@@ -59,7 +59,7 @@ export function SignaturePad({ name = "signature" }: { name?: string }) {
   return (
     <div>
       <input type="hidden" name={name} value={data} />
-      <div className="relative rounded-lg border-2 border-dashed border-slate-300 bg-white">
+      <div className="relative rounded-lg border-2 border-dashed border-slate-300 bg-[#fff]">
         <canvas
           ref={canvas}
           onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onPointerLeave={up}

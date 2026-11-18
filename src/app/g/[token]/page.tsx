@@ -20,7 +20,7 @@ export default async function PublicGallery({ params }: { params: Promise<{ toke
   const shell = (children: React.ReactNode) => (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <header className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-5">
-        <div className="rounded-lg bg-white/95 px-3 py-1.5"><Logo className="h-8" /></div>
+        <div className="rounded-lg bg-[#fff]/95 px-3 py-1.5"><Logo className="h-8" /></div>
         <div className="text-right text-xs text-zinc-400">{[c.phone, c.web].filter(Boolean).join(" · ")}</div>
       </header>
       {children}
@@ -45,7 +45,7 @@ export default async function PublicGallery({ params }: { params: Promise<{ toke
           {g.message && <p className="mx-auto mt-4 max-w-2xl whitespace-pre-wrap text-zinc-200">{g.message}</p>}
           {g.expiresAt && <p className="mt-4 text-xs text-zinc-400">Disponible jusqu&apos;au {date(g.expiresAt)} — pensez à sauvegarder vos fichiers.</p>}
           {g.externalUrl && (
-            <div className="mt-6"><a href={g.externalUrl} target="_blank" className="inline-block rounded-full bg-white px-5 py-2.5 text-sm font-medium text-zinc-900">Ouvrir la galerie ↗</a>{g.externalCode && <div className="mt-2 text-sm text-zinc-300">Code d&apos;accès : <span className="font-mono tracking-widest">{g.externalCode}</span></div>}</div>
+            <div className="mt-6"><a href={g.externalUrl} target="_blank" className="inline-block rounded-full bg-[#fff] px-5 py-2.5 text-sm font-medium text-zinc-900">Ouvrir la galerie ↗</a>{g.externalCode && <div className="mt-2 text-sm text-zinc-300">Code d&apos;accès : <span className="font-mono tracking-widest">{g.externalCode}</span></div>}</div>
           )}
         </div>
       </section>
