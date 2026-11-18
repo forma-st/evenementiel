@@ -25,7 +25,7 @@ type Tone = "ok" | "option" | "full" | "over";
 const TONE: Record<Tone, { cell: string; dot: string; text: string; label: string }> = {
   ok: { cell: "bg-emerald-50 text-emerald-800 ring-emerald-200", dot: "bg-emerald-500", text: "text-emerald-700", label: "confirmée" },
   option: { cell: "bg-amber-50 text-amber-800 ring-amber-200", dot: "bg-amber-400", text: "text-amber-700", label: "en option" },
-  full: { cell: "bg-violet-50 text-violet-800 ring-violet-200", dot: "bg-violet-500", text: "text-violet-700", label: "tout le stock sort" },
+  full: { cell: "bg-cyan-50 text-cyan-800 ring-cyan-200", dot: "bg-cyan-500", text: "text-cyan-700", label: "tout le stock sort" },
   over: { cell: "bg-rose-100 text-rose-800 ring-rose-300", dot: "bg-rose-500", text: "text-rose-700", label: "surréservé" },
 };
 
@@ -292,7 +292,7 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove }: {
                         {/* jauge : utilisé au pic / libre / en réparation */}
                         <div>
                           <div className="flex h-2.5 overflow-hidden rounded-full bg-slate-100" role="img" aria-label={`${Math.min(peak, u)} sur ${u} réservés au plus fort, ${i.outOfService} en réparation`}>
-                            <div className={over ? "bg-rose-500" : peak >= u && u > 0 ? "bg-violet-500" : "bg-brand-500"} style={{ width: `${i.quantity ? (Math.min(peak, u) / i.quantity) * 100 : 0}%` }} />
+                            <div className={over ? "bg-rose-500" : peak >= u && u > 0 ? "bg-cyan-500" : "bg-brand-500"} style={{ width: `${i.quantity ? (Math.min(peak, u) / i.quantity) * 100 : 0}%` }} />
                             <div className="flex-1" />
                             {i.outOfService > 0 && <div className="bg-[repeating-linear-gradient(45deg,#cbd5e1_0_3px,#f1f5f9_3px_6px)]" style={{ width: `${(i.outOfService / i.quantity) * 100}%` }} />}
                           </div>

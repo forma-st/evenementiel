@@ -14,8 +14,8 @@ export const EVENT_KINDS = [
 export const eventKind = (id: string) => EVENT_KINDS.find((k) => k.id === id) ?? EVENT_KINDS[EVENT_KINDS.length - 1];
 
 export const SERVICES = [
-  { id: "DJ", label: "DJ / animation", icon: "🎧", color: "bg-violet-100 text-violet-800" },
-  { id: "SONO", label: "Sonorisation", icon: "🔊", color: "bg-blue-100 text-blue-800" },
+  { id: "DJ", label: "DJ / animation", icon: "🎧", color: "bg-blue-100 text-blue-800" },
+  { id: "SONO", label: "Sonorisation", icon: "🔊", color: "bg-sky-100 text-sky-800" },
   { id: "LUMIERE", label: "Éclairage", icon: "💡", color: "bg-amber-100 text-amber-900" },
   { id: "PHOTO", label: "Photographie", icon: "📷", color: "bg-pink-100 text-pink-800" },
   { id: "VIDEO", label: "Vidéo", icon: "🎬", color: "bg-teal-100 text-teal-800" },

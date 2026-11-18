@@ -40,7 +40,7 @@ export const DOSSIER_STATUSES = [
   { id: "DEVIS_ENVOYE", label: "Devis envoyé", color: "bg-blue-100 text-blue-700" },
   { id: "OPTION", label: "Option posée", color: "bg-amber-100 text-amber-800" },
   { id: "CONFIRME", label: "Confirmée", color: "bg-emerald-100 text-emerald-700" },
-  { id: "REALISE", label: "Réalisée", color: "bg-violet-100 text-violet-700" },
+  { id: "REALISE", label: "Réalisée", color: "bg-cyan-100 text-cyan-800" },
   { id: "CLOTURE", label: "Clôturée", color: "bg-zinc-200 text-zinc-700" },
   { id: "PERDU", label: "Perdue", color: "bg-rose-100 text-rose-700" },
 ] as const;

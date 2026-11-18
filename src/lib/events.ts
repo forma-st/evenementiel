@@ -1,7 +1,7 @@
 import { TZ } from "./format";
 
 export const EVENT_TYPES = [
-  { id: "PRESTATION", label: "Prestation", icon: "🎧", chip: "bg-violet-100 text-violet-900 border-violet-300", dot: "bg-brand-600" },
+  { id: "PRESTATION", label: "Prestation", icon: "🎧", chip: "bg-blue-100 text-blue-900 border-blue-300", dot: "bg-brand-600" },
   { id: "RDV", label: "Rendez-vous client", icon: "🤝", chip: "bg-amber-100 text-amber-900 border-amber-300", dot: "bg-amber-500" },
   { id: "VISITE", label: "Visite / repérage du lieu", icon: "📍", chip: "bg-teal-100 text-teal-800 border-teal-300", dot: "bg-teal-500" },
   { id: "INSTALL", label: "Installation / livraison", icon: "🚚", chip: "bg-orange-100 text-orange-800 border-orange-300", dot: "bg-orange-500" },

@@ -17,9 +17,9 @@ export async function GET() {
   const initials = esc(c.name.split(/\s+/).filter((w) => /^[\p{L}\p{N}]/u.test(w)).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "★");
   const w = Math.max(160, 64 + c.name.length * 11);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="56" viewBox="0 0 ${w} 56">
-<rect x="0" y="4" width="48" height="48" rx="12" fill="#6d28d9"/>
+<rect x="0" y="4" width="48" height="48" rx="12" fill="#1d5fd6"/>
 <text x="24" y="36" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="19" font-weight="700" fill="#fff">${initials}</text>
-<text x="60" y="${c.tagline ? 30 : 36}" font-family="Helvetica,Arial,sans-serif" font-size="18" font-weight="700" fill="#1e1b2e">${name}</text>
+<text x="60" y="${c.tagline ? 30 : 36}" font-family="Helvetica,Arial,sans-serif" font-size="18" font-weight="700" fill="#14213d">${name}</text>
 ${c.tagline ? `<text x="60" y="47" font-family="Helvetica,Arial,sans-serif" font-size="11" fill="#71717a">${esc(c.tagline)}</text>` : ""}
 </svg>`;
   return new Response(svg, { headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=60" } });

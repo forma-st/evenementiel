@@ -3,8 +3,8 @@ import type { Company } from "./company";
 import { date } from "./format";
 import { type QuoteLine, depositOf, totals, unitLabel } from "./quotes";
 
-export const ACCENT = rgb(0.427, 0.157, 0.851);
-export const INK = rgb(0.118, 0.106, 0.18);
+export const ACCENT = rgb(0.114, 0.373, 0.839);
+export const INK = rgb(0.078, 0.129, 0.239);
 export const MUTED = rgb(0.44, 0.44, 0.48);
 export const LINE = rgb(0.86, 0.86, 0.88);
 export const A4: [number, number] = [595.28, 841.89];
@@ -99,7 +99,7 @@ export async function quoteToPdf(q: QuotePdfInput, c: Company, logo: string | nu
   page.drawText(clean(`DEVIS ${q.number ?? ""}`), { x: 50, y, size: 20, font: f.bold, color: ACCENT });
   page.drawText(clean(`Émis le ${date(q.issuedAt)} - valable jusqu'au ${date(q.validUntil)}`), { x: 50, y: y - 18, size: 9, font: f.font, color: MUTED });
   const cl = [q.client.name, q.client.address, [q.client.postalCode, q.client.city].filter(Boolean).join(" "), q.client.email, q.client.phone].filter(Boolean) as string[];
-  page.drawRectangle({ x: width - 250, y: y - 74, width: 200, height: 92, color: rgb(0.965, 0.96, 0.985) });
+  page.drawRectangle({ x: width - 250, y: y - 74, width: 200, height: 92, color: rgb(0.953, 0.965, 0.988) });
   cl.forEach((l, i) => page.drawText(clean(l).slice(0, 40), { x: width - 240, y: y + 2 - i * 13, size: i === 0 ? 10 : 9, font: i === 0 ? f.bold : f.font, color: INK }));
 
   y -= 100;
@@ -163,7 +163,7 @@ export async function quoteToPdf(q: QuotePdfInput, c: Company, logo: string | nu
   const total = c.vatExempt ? t.totalHT : t.totalTTC;
   if (q.depositPercent > 0) {
     y -= 6;
-    page.drawRectangle({ x: 45, y: y - 30, width: width - 90, height: 40, color: rgb(0.965, 0.96, 0.985) });
+    page.drawRectangle({ x: 45, y: y - 30, width: width - 90, height: 40, color: rgb(0.953, 0.965, 0.988) });
     page.drawText(clean(`Acompte à la réservation : ${q.depositPercent} % soit ${eurPdf(depositOf(total, q.depositPercent))}`), { x: 55, y: y - 4, size: 9.5, font: f.bold, color: INK });
     page.drawText(clean(`Solde : ${eurPdf(total - depositOf(total, q.depositPercent))}, à régler au plus tard 7 jours avant la prestation.`), { x: 55, y: y - 19, size: 8.5, font: f.font, color: MUTED });
     y -= 48;
@@ -252,7 +252,7 @@ export async function invoiceToPdf(inv: {
   meta.forEach((m, i) => page.drawText(clean(m), { x: 50, y: y - 18 - i * 12, size: 9, font: f.font, color: MUTED }));
   const b = inv.buyer;
   const bl = [b.name, b.address, [b.postalCode, b.city].filter(Boolean).join(" "), b.isCompany && b.siren ? `SIREN ${b.siren}` : null, b.vat ? `TVA ${b.vat}` : null].filter(Boolean) as string[];
-  page.drawRectangle({ x: width - 250, y: y - 74, width: 200, height: 92, color: rgb(0.965, 0.96, 0.985) });
+  page.drawRectangle({ x: width - 250, y: y - 74, width: 200, height: 92, color: rgb(0.953, 0.965, 0.988) });
   page.drawText("Facturé à", { x: width - 240, y: y + 6, size: 7.5, font: f.font, color: MUTED });
   bl.forEach((l, i) => page.drawText(clean(l).slice(0, 42), { x: width - 240, y: y - 8 - i * 12, size: i === 0 ? 10 : 9, font: i === 0 ? f.bold : f.font, color: INK }));
 

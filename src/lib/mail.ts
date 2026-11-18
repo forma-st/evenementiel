@@ -13,9 +13,9 @@ const escapeHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "
 /** Texte brut -> HTML simple (paragraphes, liens cliquables). */
 export function textToHtml(text: string, signature: string) {
   const body = escapeHtml(text)
-    .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#6d28d9">$1</a>')
+    .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#1d5fd6">$1</a>')
     .split(/\n{2,}/).map((p) => `<p style="margin:0 0 14px">${p.replace(/\n/g, "<br>")}</p>`).join("");
-  return `<div style="font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#1e1b2e;max-width:600px">${body}<p style="margin-top:24px;color:#71717a;font-size:13px">${escapeHtml(signature)}</p></div>`;
+  return `<div style="font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#14213d;max-width:600px">${body}<p style="margin-top:24px;color:#71717a;font-size:13px">${escapeHtml(signature)}</p></div>`;
 }
 
 export async function sendMail(m: { to: string; subject: string; text: string; dossierId?: string | null; clientId?: string | null; replyTo?: string | null; attachments?: { filename: string; content: Buffer }[] }) {
