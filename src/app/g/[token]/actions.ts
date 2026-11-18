@@ -1,4 +1,5 @@
 "use server";
+import { rateLimit, requestInfo, safeEqual, tooMany } from "@/lib/security";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { grantGalleryAccess, hasGalleryAccess, isGalleryOpen } from "@/lib/galleries";
@@ -7,8 +8,12 @@ import { notify } from "@/lib/notify";
 export async function unlockGallery(token: string, _: unknown, f: FormData) {
   const g = await db.gallery.findUnique({ where: { token } });
   if (!g || !isGalleryOpen(g)) return { error: "Galerie indisponible." };
+  const { ip } = await requestInfo();
+  const lim = await rateLimit(`gallery:${g.id}:${ip}`, 8, 15 * 60e3);
+  const limAll = await rateLimit(`gallery:${g.id}`, 60, 60 * 60e3);
+  if (!lim.ok || !limAll.ok) return { error: tooMany(Math.max(lim.retryAfter, limAll.retryAfter, 1)) };
   const code = String(f.get("code") ?? "").trim().toUpperCase().replace(/\s/g, "");
-  if (!g.password || code !== g.password.toUpperCase().replace(/\s/g, "")) return { error: "Code incorrect." };
+  if (!g.password || !safeEqual(code, g.password.toUpperCase().replace(/\s/g, ""))) return { error: "Code incorrect." };
   await grantGalleryAccess(g);
   revalidatePath(`/g/${token}`);
   return { ok: true };

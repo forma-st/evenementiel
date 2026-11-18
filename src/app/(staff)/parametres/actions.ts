@@ -3,14 +3,18 @@ import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { requireAdmin, requireStaff } from "@/lib/auth";
+import { createSession, requireAdmin, requireStaff, revokeSessions } from "@/lib/auth";
+import { passwordProblem } from "@/lib/passwords";
+import { newRecoveryCodes, newTotpSecret, otpauthUrl, verifyTotp } from "@/lib/totp";
+import { getCompany } from "@/lib/company";
+import { rateLimit, tooMany } from "@/lib/security";
 import { DEFAULT_PERMS, PERM_DEFS, requirePerm, type Perms } from "@/lib/permissions";
 import { TAG_COLORS } from "@/lib/tags";
 import { notify } from "@/lib/notify";
 
 type Res = { ok?: string; error?: string; password?: string; email?: string } | null;
 const s = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
-const tempPassword = () => randomBytes(6).toString("base64url");
+const tempPassword = () => randomBytes(12).toString("base64url"); // 16 caractères aléatoires
 
 /* ---------- Mon compte ---------- */
 
@@ -27,10 +31,14 @@ export async function changePassword(_: Res, f: FormData): Promise<Res> {
   const u = await requireStaff();
   if (!(await bcrypt.compare(s(f, "current"), u.passwordHash))) return { error: "Mot de passe actuel incorrect." };
   const next = s(f, "next");
-  if (next.length < 8) return { error: "Le nouveau mot de passe doit faire au moins 8 caractères." };
+  const weak = passwordProblem(next, u.email);
+  if (weak) return { error: weak };
   if (next !== s(f, "confirm")) return { error: "Les deux mots de passe ne correspondent pas." };
-  await db.user.update({ where: { id: u.id }, data: { passwordHash: await bcrypt.hash(next, 10) } });
-  return { ok: "Mot de passe modifié." };
+  await db.user.update({ where: { id: u.id }, data: { passwordHash: await bcrypt.hash(next, 12) } });
+  // les autres appareils sont déconnectés ; cette session est renouvelée
+  await revokeSessions(u.id);
+  await createSession(u.id);
+  return { ok: "Mot de passe modifié. Vos autres appareils ont été déconnectés." };
 }
 
 /* ---------- Équipe (administrateur) ---------- */
@@ -43,7 +51,7 @@ export async function createUser(_: Res, f: FormData): Promise<Res> {
   if (!email) return { error: "E-mail requis." };
   if (await db.user.findUnique({ where: { email } })) return { error: "Cet e-mail est déjà utilisé." };
   const password = tempPassword();
-  const u = await db.user.create({ data: { email, name, role, jobTitle: s(f, "jobTitle") || null, passwordHash: await bcrypt.hash(password, 10) } });
+  const u = await db.user.create({ data: { email, name, role, jobTitle: s(f, "jobTitle") || null, passwordHash: await bcrypt.hash(password, 12) } });
   // ajout au canal d'équipe
   const general = await db.conversation.findFirst({ where: { kind: "CHANNEL", name: "Général" } });
   if (general) await db.conversationMember.create({ data: { conversationId: general.id, userId: u.id } });
@@ -57,6 +65,7 @@ export async function setUserRole(id: string, role: string) {
   if (id === me.id) return; // évite de se retirer ses propres droits
   if (!["ADMIN", "MANAGER", "MEMBER"].includes(role)) return;
   await db.user.update({ where: { id }, data: { role } });
+  await revokeSessions(id);
   revalidatePath("/parametres/equipe");
 }
 
@@ -64,13 +73,14 @@ export async function setUserActive(id: string, active: boolean) {
   const me = await requireAdmin();
   if (id === me.id) return;
   await db.user.update({ where: { id }, data: { active } });
+  if (!active) await revokeSessions(id);
   revalidatePath("/parametres/equipe");
 }
 
 export async function resetUserPassword(id: string): Promise<Res> {
   await requireAdmin();
   const password = tempPassword();
-  const u = await db.user.update({ where: { id }, data: { passwordHash: await bcrypt.hash(password, 10) } });
+  const u = await db.user.update({ where: { id }, data: { passwordHash: await bcrypt.hash(password, 12), sessionVersion: { increment: 1 } } });
   return { email: u.email, password };
 }
 
@@ -145,4 +155,46 @@ export async function quickCreateTag(name: string): Promise<{ id: string; name: 
   if (existing) return existing;
   const colors = Object.keys(TAG_COLORS).filter((c) => c !== "slate");
   return db.tag.create({ data: { name: clean, color: colors[Math.floor(Math.random() * colors.length)] } });
+}
+
+/* ---------- Sécurité du compte ---------- */
+
+/** Déconnecte tous les appareils, sauf celui-ci (nouvelle session). */
+export async function signOutEverywhere(): Promise<Res> {
+  const u = await requireStaff();
+  await revokeSessions(u.id);
+  await createSession(u.id);
+  return { ok: "Tous vos autres appareils ont été déconnectés." };
+}
+
+/** Étape 1 : secret généré (pas encore actif), QR code à scanner. */
+export async function startTwoFactor(): Promise<{ qr: string; secret: string } | { error: string }> {
+  const u = await requireStaff();
+  if (u.totpEnabled) return { error: "La vérification en deux étapes est déjà activée." };
+  const secret = newTotpSecret();
+  await db.user.update({ where: { id: u.id }, data: { totpSecret: secret } });
+  const QR = await import("qrcode");
+  const qr = await QR.toDataURL(otpauthUrl(secret, u.email, (await getCompany()).name), { margin: 1, width: 220 });
+  return { qr, secret };
+}
+
+/** Étape 2 : premier code valide = activation, codes de secours affichés une seule fois. */
+export async function confirmTwoFactor(code: string): Promise<{ codes: string[] } | { error: string }> {
+  const u = await requireStaff();
+  const lim = await rateLimit(`2fa-setup:${u.id}`, 10, 15 * 60e3);
+  if (!lim.ok) return { error: tooMany(lim.retryAfter) };
+  if (!u.totpSecret || !verifyTotp(u.totpSecret, code)) return { error: "Code incorrect : vérifiez l'heure de votre téléphone et réessayez." };
+  const { codes, hashes } = newRecoveryCodes();
+  await db.user.update({ where: { id: u.id }, data: { totpEnabled: true, recoveryCodes: JSON.stringify(hashes) } });
+  await revokeSessions(u.id);
+  await createSession(u.id);
+  return { codes };
+}
+
+export async function disableTwoFactor(_: Res, f: FormData): Promise<Res> {
+  const u = await requireStaff();
+  if (!(await bcrypt.compare(s(f, "password"), u.passwordHash))) return { error: "Mot de passe incorrect." };
+  await db.user.update({ where: { id: u.id }, data: { totpEnabled: false, totpSecret: null, recoveryCodes: null } });
+  revalidatePath("/parametres/compte");
+  return { ok: "Vérification en deux étapes désactivée." };
 }

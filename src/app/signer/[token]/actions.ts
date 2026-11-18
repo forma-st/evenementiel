@@ -1,4 +1,5 @@
 "use server";
+import { rateLimit, requestInfo, tooMany } from "@/lib/security";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
@@ -26,6 +27,8 @@ async function openSigner(token: string) {
 }
 
 export async function signDocument(token: string, _: SignState, f: FormData): Promise<SignState> {
+  const lim = await rateLimit(`sign:${(await requestInfo()).ip}`, 20, 15 * 60e3);
+  if (!lim.ok) return { error: tooMany(lim.retryAfter) };
   const o = await openSigner(token);
   if ("error" in o) return { error: o.error };
   if (f.get("agree") !== "on") return { error: "Cochez la case « J'ai lu et j'approuve le document »." };
@@ -44,6 +47,8 @@ export async function signDocument(token: string, _: SignState, f: FormData): Pr
 }
 
 export async function declineDocument(token: string, _: SignState, f: FormData): Promise<SignState> {
+  const lim = await rateLimit(`sign:${(await requestInfo()).ip}`, 20, 15 * 60e3);
+  if (!lim.ok) return { error: tooMany(lim.retryAfter) };
   const o = await openSigner(token);
   if ("error" in o) return { error: o.error };
   const reason = String(f.get("reason") ?? "").trim().slice(0, 1000);

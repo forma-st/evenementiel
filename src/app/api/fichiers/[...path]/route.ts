@@ -19,6 +19,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ path: st
       "Content-Type": TYPES[ext] ?? "application/octet-stream",
       "Content-Length": String(st.size),
       "Cache-Control": "private, max-age=86400",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "default-src 'none'; img-src 'self'; media-src 'self'; sandbox",
+      ...(!/^(image|video)\//.test(TYPES[ext] ?? "") && !dl ? { "Content-Disposition": "attachment" } : {}),
       ...(dl ? { "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(dl)}` } : {}),
     },
   });

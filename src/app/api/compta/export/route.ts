@@ -16,7 +16,7 @@ const day = (d: Date | null) => (d ? `${String(parisParts(d).d).padStart(2, "0")
  */
 export async function GET(req: Request) {
   const user = await currentUser();
-  if (!user || user.role === "CLIENT") return new Response("Non autorisé", { status: 401 });
+  if (!user || (user.role !== "ADMIN" && user.role !== "MANAGER")) return new Response("Réservé aux administrateurs et responsables.", { status: 403 });
   const u = new URL(req.url);
   const y = new Date().getFullYear();
   const from = fromParis(u.searchParams.get("du") || `${y}-01-01`);

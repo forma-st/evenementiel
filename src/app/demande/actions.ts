@@ -1,4 +1,5 @@
 "use server";
+import { rateLimit, requestInfo, tooMany } from "@/lib/security";
 import { db } from "@/lib/db";
 import { fromParis } from "@/lib/format";
 import { runAutomations } from "@/lib/automations";
@@ -13,6 +14,10 @@ const s = (f: FormData, k: string) => String(f.get(k) ?? "").trim().slice(0, 200
 /** Demande de devis publique : client + prestation « Demande » + automatisations. */
 export async function submitLead(_: LeadState, f: FormData): Promise<LeadState> {
   if (s(f, "website")) return { ok: true }; // piège à robots
+  const { ip } = await requestInfo();
+  const lim = await rateLimit(`lead:${ip}`, 5, 60 * 60e3);
+  const limAll = await rateLimit("lead:all", 200, 24 * 60 * 60e3);
+  if (!lim.ok || !limAll.ok) return { error: "Vous avez déjà envoyé plusieurs demandes : nous revenons vers vous rapidement." };
   const name = s(f, "name"), email = s(f, "email").toLowerCase(), phone = s(f, "phone");
   if (!name || !/^\S+@\S+\.\S+$/.test(email)) return { error: "Indiquez votre nom et une adresse e-mail valide." };
   const day = s(f, "date");

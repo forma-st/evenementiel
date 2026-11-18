@@ -1,4 +1,5 @@
 "use server";
+import { rateLimit, requestInfo, tooMany } from "@/lib/security";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { parseFields, validateAnswers } from "@/lib/questionnaire";
@@ -10,8 +11,12 @@ export async function submitAnswers(token: string, _: SubmitState, f: FormData):
   const a = await db.questionnaireAssignment.findUnique({ where: { token }, include: { questionnaire: true } });
   if (!a) return { errors: { _: "Lien invalide" } };
   if (a.status === "COMPLETE") return { done: true };
+  const lim = await rateLimit(`q:${(await requestInfo()).ip}`, 30, 60 * 60e3);
+  if (!lim.ok) return { errors: { _: tooMany(lim.retryAfter) } };
+  const raw = String(f.get("answers") || "{}");
+  if (raw.length > 100_000) return { errors: { _: "Réponses trop longues." } };
   let answers: Record<string, unknown> = {};
-  try { answers = JSON.parse(String(f.get("answers") || "{}")); } catch {}
+  try { answers = JSON.parse(raw); } catch {}
   const fields = parseFields(a.questionnaire.fields);
   // On ne garde que les champs connus
   answers = Object.fromEntries(fields.filter((x) => x.id in answers).map((x) => [x.id, answers[x.id]]));

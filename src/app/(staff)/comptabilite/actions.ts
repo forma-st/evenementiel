@@ -45,6 +45,7 @@ export async function addExpense(f: FormData) {
   let receiptUrl: string | null = null;
   if (file instanceof File && file.size) {
     if (file.size > 4 * 1024 * 1024) throw new Error("Justificatif trop lourd (4 Mo maximum).");
+    if (!/^(image\/(jpeg|png|webp|heic)|application\/pdf)$/.test(file.type)) throw new Error("Justificatif : photo (JPEG, PNG) ou PDF uniquement.");
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (isBlobConfigured()) {
       const { put } = await import("@vercel/blob");

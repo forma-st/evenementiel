@@ -104,12 +104,12 @@ export async function createPortalAccess(clientId: string, _prev: unknown, f: Fo
   const email = (s(f, "email") || "").toLowerCase();
   const name = s(f, "name") || email;
   if (!email) return { error: "E-mail requis" };
-  const password = randomBytes(6).toString("base64url");
-  const passwordHash = await bcrypt.hash(password, 10);
+  const password = randomBytes(12).toString("base64url");
+  const passwordHash = await bcrypt.hash(password, 12);
   const existing = await db.user.findUnique({ where: { email } });
   if (existing && (existing.role !== "CLIENT" || existing.clientId !== clientId))
     return { error: "Cet e-mail est déjà utilisé par un autre compte." };
-  if (existing) await db.user.update({ where: { id: existing.id }, data: { passwordHash, name } });
+  if (existing) await db.user.update({ where: { id: existing.id }, data: { passwordHash, name, sessionVersion: { increment: 1 } } });
   else await db.user.create({ data: { email, name, passwordHash, role: "CLIENT", clientId } });
   revalidatePath(`/clients/${clientId}`);
   return { email, password };

@@ -20,6 +20,12 @@ model User {
   jobTitle     String?
   icsToken     String?
   dashboardLayout String? // disposition personnalisée du tableau de bord (JSON)
+  sessionVersion Int    @default(0) // incrémenté pour déconnecter toutes les sessions
+  totpSecret   String?   // double authentification (application d'authentification)
+  totpEnabled  Boolean   @default(false)
+  recoveryCodes String?  // codes de secours (empreintes SHA-256, JSON)
+  lastLoginAt  DateTime?
+  loginEvents  LoginEvent[]
   clientsOwned Client[]  @relation("ClientOwner")
   notifications Notification[]
   messages     Message[]
@@ -612,4 +618,27 @@ model UrssafDeclaration {
   paidAt      DateTime?
   reference   String?
   createdAt   DateTime  @default(now())
+}
+
+// Limitation des tentatives (connexion, codes d'accès, formulaires publics)
+model RateLimit {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+}
+
+// Journal des connexions (réussies et refusées)
+model LoginEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  ip        String?
+  userAgent String?
+  success   Boolean
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([email, createdAt])
 }

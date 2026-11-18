@@ -1,10 +1,13 @@
 "use server";
+import { rateLimit, requestInfo, tooMany } from "@/lib/security";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { notify } from "@/lib/notify";
 import { acceptQuote } from "@/lib/quoteAccept";
 
 export async function answerQuote(token: string, _: unknown, f: FormData): Promise<{ error?: string; ok?: boolean }> {
+  const lim = await rateLimit(`quote:${(await requestInfo()).ip}`, 15, 60 * 60e3);
+  if (!lim.ok) return { error: tooMany(lim.retryAfter) };
   const q = await db.quote.findUnique({ where: { token }, include: { client: true, dossier: true } });
   if (!q || !["ENVOYE"].includes(q.status)) return { error: "Ce devis ne peut plus être modifié." };
   if (q.validUntil < new Date()) return { error: "Ce devis a expiré." };
