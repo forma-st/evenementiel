@@ -129,7 +129,9 @@ function eventTimes(f: FormData) {
   const day = s(f, "eventDate");
   if (!day) return { eventStart: null, eventEnd: null };
   const start = fromParis(day, s(f, "startTime") || "18:00");
-  let end = fromParis(day, s(f, "endTime") || "02:00");
+  // date de fin facultative (location ou événement sur plusieurs jours)
+  const endDay = s(f, "endDate") && s(f, "endDate")! > day ? s(f, "endDate")! : day;
+  let end = fromParis(endDay, s(f, "endTime") || "02:00");
   if (end <= start) end = new Date(end.getTime() + 864e5);
   return { eventStart: start, eventEnd: end };
 }
@@ -160,6 +162,7 @@ function dossierData(f: FormData) {
     source: s(f, "source"),
     lostReason: s(f, "lostReason"),
     depositPercent: pct ? Math.min(100, Math.max(0, Number(pct.replace(",", ".")))) : 30,
+    cautionAmount: s(f, "cautionAmount") ? Math.max(0, Number(s(f, "cautionAmount")!.replace(",", "."))) || null : null,
   };
 }
 

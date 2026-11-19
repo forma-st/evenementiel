@@ -40,7 +40,12 @@ export async function deleteCatalogItem(id: string) {
 export async function saveEquipment(id: string | null, f: FormData) {
   await requireStaff();
   const quantity = Math.max(0, Math.round(n(s(f, "quantity"), 1)));
-  const data = { name: s(f, "name") || "Matériel", category: s(f, "category") || "AUTRE", quantity, outOfService: Math.min(quantity, Math.max(0, Math.round(n(s(f, "outOfService"), 0)))), notes: s(f, "notes") || null };
+  const money = (k: string) => (s(f, k) === "" ? null : Math.max(0, n(s(f, k))));
+  const data = {
+    name: s(f, "name") || "Matériel", category: s(f, "category") || "AUTRE", quantity,
+    outOfService: Math.min(quantity, Math.max(0, Math.round(n(s(f, "outOfService"), 0)))), notes: s(f, "notes") || null,
+    ...(f.has("dailyRate") ? { dailyRate: money("dailyRate"), replacementValue: money("replacementValue") } : {}),
+  };
   if (id) await db.equipment.update({ where: { id }, data });
   else await db.equipment.create({ data });
   revalidatePath("/materiel");

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { deleteRule, runNow, toggleRule } from "@/app/(staff)/parametres/automatisations/actions";
-import { TRIGGERS, describeAction, describeTrigger, type AutomationAction } from "@/lib/automations";
+import { TRIGGERS, describeAction, describeTrigger, type AutomationAction } from "@/lib/automationDefs";
 import { RuleEditor, type RuleData } from "./RuleEditor";
 
 type Rule = RuleData & { id: string; runs: number };

@@ -64,6 +64,8 @@ Récapitulatif :
 - Prestations : {{prestation.services}}
 - Acompte : {{acompte}} — Solde : {{solde}}, à régler au plus tard 7 jours avant l'événement.
 
+Régler l'acompte en ligne (carte ou virement) : {{lien.paiement}}
+
 Votre espace client vous permet de retrouver vos documents, de suivre vos paiements et de préparer la soirée avec nous :
 {{lien.portail}}
 
@@ -93,7 +95,7 @@ Je vous proposerai ensuite un rendez-vous téléphonique pour tout caler ensembl
 
 Votre événement approche ! Pour rappel, le solde de {{solde}} est à régler au plus tard 7 jours avant la prestation.
 
-Règlement par virement : {{societe.iban}} (référence {{prestation.reference}}).
+Régler en ligne (carte ou virement) : {{lien.paiement}}
 
 Si c'est déjà fait, merci et ne tenez pas compte de ce message.
 
@@ -152,8 +154,8 @@ Belle redécouverte de votre journée !
 
 Sauf erreur de notre part, nous n'avons pas encore reçu votre dernier règlement pour la prestation du {{prestation.date}}.
 
-Vous pouvez suivre votre échéancier dans votre espace client : {{lien.portail}}
-Virement : {{societe.iban}} (référence {{prestation.reference}}).
+Régler en ligne (carte ou virement) : {{lien.paiement}}
+Votre échéancier : {{lien.portail}}
 
 Merci d'avance,
 {{societe.nom}}`,

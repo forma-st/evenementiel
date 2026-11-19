@@ -4,6 +4,7 @@ import { CopyLink } from "@/components/CopyLink";
 import { regenerateIcsToken } from "../../agenda/actions";
 import { isMailConfigured } from "@/lib/mail";
 import { isBlobConfigured } from "@/lib/storage";
+import { isStripeConfigured } from "@/lib/stripe";
 import { Badge, Card } from "@/components/ui";
 
 export const metadata = { title: "Intégrations" };
@@ -48,6 +49,27 @@ export default async function Integrations() {
           )}
         </Card>
       </div>
+      <Card title="Votre nom de domaine" actions={<Status on={!host.endsWith(".vercel.app") && !host.startsWith("localhost")} labelOn="Personnalisé" labelOff="Adresse Vercel" />}>
+        <p className="text-sm text-slate-600">Vos clients voient vos devis, contrats, galeries et paiements sur votre propre adresse, par exemple <code>espace.monstudio.fr</code>, au lieu de <code>{host}</code>.</p>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-500">
+          <li>Dans Vercel : projet › Settings › Domains › Add, saisissez <code>espace.votredomaine.fr</code>.</li>
+          <li>Chez votre hébergeur de nom de domaine (OVH, Gandi, IONOS…) : ajoutez l&apos;enregistrement <b>CNAME</b> indiqué par Vercel (en général <code>cname.vercel-dns.com</code>).</li>
+          <li>Attendez la validation (quelques minutes à quelques heures) : le certificat HTTPS est créé automatiquement.</li>
+          <li>Les liens envoyés aux clients utilisent alors la nouvelle adresse. Pour la forcer, ajoutez <code>APP_URL</code> = <code>https://espace.votredomaine.fr</code> dans Vercel et redéployez.</li>
+        </ol>
+      </Card>
+      <Card title="Paiement en ligne (Stripe)" actions={<Status on={isStripeConfigured()} labelOff="Non configuré" />}>
+        <p className="text-sm text-slate-600">Vos clients règlent l&apos;acompte et le solde par carte, Apple Pay ou Google Pay depuis leur lien de paiement ou l&apos;espace client. Le règlement s&apos;enregistre tout seul, la facture passe en « payée » et vous êtes prévenu.</p>
+        {!isStripeConfigured() && (
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-500">
+            <li>Créez un compte sur stripe.com (vérification d&apos;identité et IBAN de versement).</li>
+            <li>Développeurs › Clés API : copiez la <b>clé secrète</b> dans Vercel sous <code>STRIPE_SECRET_KEY</code>.</li>
+            <li>Développeurs › Webhooks › Ajouter une destination : adresse <code>{base}/api/stripe/webhook</code>, événements <code>checkout.session.completed</code> et <code>checkout.session.async_payment_succeeded</code>.</li>
+            <li>Copiez le <b>secret de signature</b> du webhook dans Vercel sous <code>STRIPE_WEBHOOK_SECRET</code>, puis redéployez.</li>
+          </ol>
+        )}
+        <p className="mt-2 text-xs text-slate-500">Sans Stripe, le lien de paiement affiche vos coordonnées de virement. Frais Stripe : environ 1,5 % + 0,25 € par carte européenne.</p>
+      </Card>
       <Card title="Envoi des e-mails (Resend)" actions={<Status on={isMailConfigured()} labelOff="Mode simulation" />}>
         <p className="text-sm text-slate-600">Envoi des devis, liens de signature, galeries et e-mails automatiques. Sans configuration, les e-mails sont enregistrés dans l&apos;historique de la prestation sans être envoyés.</p>
         {!isMailConfigured() && <p className="mt-2 text-sm text-slate-500">Créez un compte gratuit sur resend.com, validez votre nom de domaine, puis ajoutez dans Vercel <code>RESEND_API_KEY</code> et <code>MAIL_FROM</code> (ex. « Mon Studio &lt;contact@monstudio.fr&gt; ») et redéployez.</p>}

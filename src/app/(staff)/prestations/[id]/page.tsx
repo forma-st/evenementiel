@@ -13,6 +13,9 @@ import { CopyLink } from "@/components/CopyLink";
 import { EmailComposer } from "@/components/EmailComposer";
 import { EquipmentPicker } from "@/components/EquipmentPicker";
 import { equipmentAvailability } from "@/lib/equipment";
+import { paymentToken } from "@/lib/stripe";
+import { RentalPanel } from "@/components/RentalPanel";
+import { parseJson, rentalDays, type Checkin, type Checkout } from "@/lib/rental";
 import { invoiceFromPayment } from "../../factures/actions";
 import { INVOICE_KINDS, INVOICE_STATUSES } from "@/lib/invoices";
 import { requireStaff } from "@/lib/auth";
@@ -63,6 +66,8 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
   const days = d.eventStart ? Math.ceil((d.eventStart.getTime() - Date.now()) / 864e5) : null;
 
   const availability = await equipmentAvailability(id, d.eventStart, d.eventEnd);
+  const payLinks: Record<string, string> = {};
+  for (const p of d.payments) if (!p.paidAt && p.amount > 0) payLinks[p.id] = `${base}/p/${await paymentToken(p.id)}`;
   const overbooked = availability.filter((x) => x.overbooked);
 
   return (
@@ -127,6 +132,21 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="min-w-0 space-y-6 lg:col-span-2">
+          {d.eventType === "LOCATION" && (
+            <RentalPanel
+              key={d.equipment.map((x) => `${x.equipmentId}:${x.quantity}`).join(",")}
+              dossierId={id}
+              start={d.eventStart?.toISOString() ?? null}
+              end={d.eventEnd?.toISOString() ?? null}
+              days={rentalDays(d.eventStart, d.eventEnd)}
+              items={d.equipment.map((x) => ({ id: x.equipmentId, name: x.equipment.name, qty: x.quantity, dailyRate: x.equipment.dailyRate, replacementValue: x.equipment.replacementValue }))}
+              caution={d.cautionAmount}
+              cautionStatus={d.cautionStatus || (d.cautionAmount ? "A_RECEVOIR" : "")}
+              checkout={parseJson<Checkout>(d.checkout)}
+              checkin={parseJson<Checkin>(d.checkin)}
+            />
+          )}
+
           <Card title="Devis" actions={perms.canCreateQuotes ? <Link href={`/devis/nouveau?dossierId=${id}`} className="text-sm text-link-600 hover:underline">+ Nouveau devis</Link> : undefined}>
             {d.quotes.length === 0 ? <Empty>Aucun devis. Créez-le à partir du catalogue.</Empty> : (
               <ul className="divide-y divide-slate-100 text-sm">
@@ -154,6 +174,8 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
                         <div className="font-medium">{p.label} — {eur(p.amount)}</div>
                         <div className={`text-xs ${late ? "font-medium text-rose-600" : "text-slate-500"}`}>{p.paidAt ? `✓ reçu le ${date(p.paidAt)}${p.method ? ` (${p.method})` : ""}` : p.dueDate ? `${late ? "En retard — " : ""}échéance ${date(p.dueDate)}` : "sans échéance"}</div>
                       </div>
+                      {!p.paidAt && p.amount > 0 && payLinks[p.id] && <CopyLink url={payLinks[p.id]} label="Lien de paiement" />}
+                      {p.paidOnline && <span className="badge bg-emerald-100 text-emerald-700">💳 en ligne</span>}
                       <form action={markPaymentPaid.bind(null, p.id)} className="flex items-center gap-2">
                         {!p.paidAt && <select name="method" className="input w-36 py-1 text-xs">{PAYMENT_METHODS.map((m) => <option key={m}>{m}</option>)}</select>}
                         <button className={p.paidAt ? "text-xs text-slate-400 hover:text-slate-700" : "btn-secondary py-1 text-xs"}>{p.paidAt ? "Annuler" : "✓ Reçu"}</button>

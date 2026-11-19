@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { getCompany } from "./company";
+import { paymentToken } from "./stripe";
 import { eur, longDate, time, date as shortDate, TZ, BOOKED_STATUSES } from "./format";
 import { eventKind, servicesLabel } from "./presta";
 import { depositOf, totals, parseLines } from "./quotes";
@@ -43,6 +44,7 @@ export const MERGE_VARIABLES: [string, string][] = [
   ["lien.devis", "Lien de consultation du devis"],
   ["lien.galerie", "Lien de la dernière galerie publiée"],
   ["lien.galerie_code", "Code d'accès de la galerie"],
+  ["lien.paiement", "Lien de paiement de la prochaine échéance (carte ou virement)"],
   ["lien.avis", "Lien pour laisser un avis"],
   ["date_du_jour", "Date du jour"],
 ];
@@ -64,6 +66,7 @@ export async function varsForDossier(dossierId: string): Promise<MergeVars> {
       client: true, assignee: true,
       quotes: { orderBy: { createdAt: "desc" } },
       galleries: { where: { status: "PUBLIEE" }, orderBy: { publishedAt: "desc" }, take: 1 },
+      payments: { where: { paidAt: null, amount: { gt: 0 } }, orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }], take: 1 },
     },
   });
   const c = await getCompany();
@@ -114,6 +117,7 @@ export async function varsForDossier(dossierId: string): Promise<MergeVars> {
     "lien.devis": q?.token ? `${url}/d/${q.token}` : `${url}/portail`,
     "lien.galerie": g ? `${url}/g/${g.token}` : "",
     "lien.galerie_code": g?.password ?? "",
+    "lien.paiement": d.payments[0] ? `${url}/p/${await paymentToken(d.payments[0].id)}` : `${url}/portail`,
     "lien.avis": c.reviewUrl,
     date_du_jour: shortDate(new Date()),
   };

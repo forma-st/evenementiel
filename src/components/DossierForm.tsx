@@ -34,6 +34,10 @@ export function DossierForm({ action, dossier, clients, users, defaultClientId, 
           <Field label="Début"><input name="startTime" type="time" defaultValue={hm(dossier?.eventStart) || "18:00"} className="input" /></Field>
           <Field label="Fin"><input name="endTime" type="time" defaultValue={hm(dossier?.eventEnd) || "02:00"} className="input" /></Field>
         </div>
+        <div className="sm:col-span-2">
+          <Field label="Jusqu'au (location ou événement sur plusieurs jours)"><input name="endDate" type="date" defaultValue={dossier?.eventEnd && dossier.eventStart && parisParts(dossier.eventEnd).key !== parisParts(dossier.eventStart).key && dossier.eventEnd.getTime() - dossier.eventStart.getTime() > 864e5 ? parisParts(dossier.eventEnd).key : ""} className="input sm:max-w-xs" /></Field>
+          <p className="mt-1 text-xs text-slate-500">Pour une location : date et heure de retrait au-dessus, date et heure de retour ici et dans « Fin ».</p>
+        </div>
         <div className="sm:col-span-2"><DateCheck excludeId={dossier?.id} /></div>
         <Field label="Installation à partir de"><input name="setupTime" type="time" defaultValue={dossier?.setupTime ?? ""} className="input" /></Field>
         <Field label="Nombre d'invités"><input name="guests" type="number" min={0} defaultValue={dossier?.guests ?? ""} className="input" /></Field>
@@ -83,6 +87,7 @@ export function DossierForm({ action, dossier, clients, users, defaultClientId, 
         </Field>
         <Field label="Budget / montant estimé (€ TTC)"><input name="amount" inputMode="decimal" defaultValue={dossier?.amount ?? ""} className="input" /></Field>
         <Field label="Acompte (%)"><input name="depositPercent" type="number" min={0} max={100} defaultValue={dossier?.depositPercent ?? 30} className="input" /></Field>
+        <Field label="Caution demandée (€, location de matériel)"><input name="cautionAmount" inputMode="decimal" defaultValue={dossier?.cautionAmount ?? ""} placeholder="Ex. 500" className="input" /></Field>
         <Field label="Répondre avant le"><input name="dueDate" type="date" defaultValue={dossier?.dueDate?.toISOString().slice(0, 10)} className="input" /></Field>
         {dossier?.status === "PERDU" && <Field label="Raison de la perte"><input name="lostReason" defaultValue={dossier?.lostReason ?? ""} className="input" /></Field>}
         <div className="sm:col-span-2">

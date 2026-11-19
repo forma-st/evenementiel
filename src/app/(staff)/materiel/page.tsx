@@ -21,13 +21,13 @@ export default async function EquipmentPage({ searchParams }: { searchParams: Pr
     orderBy: [{ category: "asc" }, { name: "asc" }],
     include: {
       bookings: {
-        where: { dossier: { status: { in: HOLDING_STATUSES }, eventStart: { gte: from, lt: addDays(from, days) } } },
+        where: { dossier: { status: { in: HOLDING_STATUSES }, eventEnd: { gte: from }, eventStart: { lt: addDays(from, days) } } },
         include: { dossier: { select: { id: true, reference: true, title: true, status: true, eventType: true, eventStart: true, eventEnd: true, venueCity: true, venueName: true, client: { select: { name: true } } } } },
       },
     },
   });
   const data: BoardItem[] = items.map((i) => ({
-    id: i.id, name: i.name, category: i.category, quantity: i.quantity, outOfService: i.outOfService, notes: i.notes,
+    id: i.id, name: i.name, category: i.category, quantity: i.quantity, outOfService: i.outOfService, notes: i.notes, dailyRate: i.dailyRate, replacementValue: i.replacementValue,
     bookings: i.bookings
       .map((b) => ({
         dossierId: b.dossier.id, reference: b.dossier.reference, title: b.dossier.title, status: b.dossier.status, icon: eventKind(b.dossier.eventType).icon,

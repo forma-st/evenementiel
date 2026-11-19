@@ -9,6 +9,7 @@ export const EVENT_KINDS = [
   { id: "SOIREE", label: "Soirée privée", icon: "🎉" },
   { id: "CONCERT", label: "Concert / spectacle", icon: "🎤" },
   { id: "SEANCE", label: "Séance photo", icon: "📷" },
+  { id: "LOCATION", label: "Location de matériel", icon: "📦" },
   { id: "AUTRE", label: "Autre", icon: "•" },
 ] as const;
 export const eventKind = (id: string) => EVENT_KINDS.find((k) => k.id === id) ?? EVENT_KINDS[EVENT_KINDS.length - 1];

@@ -42,7 +42,7 @@ const nextConfig: NextConfig = {
       // le formulaire de demande peut être intégré dans votre site (iframe)
       { source: "/demande", headers: [...common, { key: "Content-Security-Policy", value: csp("*") }] },
       // pages à lien secret : jamais indexées par les moteurs de recherche
-      { source: "/(d|g|q|signer)/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "private, no-store" }] },
+      { source: "/(d|g|p|q|signer)/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "private, no-store" }] },
     ];
   },
 };

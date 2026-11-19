@@ -7,6 +7,7 @@ import { date, eur, quoteStatus, statusOf, time, TZ } from "@/lib/format";
 import { eventKind, servicesLabel } from "@/lib/presta";
 import { getCompany } from "@/lib/company";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
+import { paymentToken } from "@/lib/stripe";
 
 const fullDate = (d: Date) => new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: TZ }).format(d);
 
@@ -29,6 +30,8 @@ export default async function Portal() {
     },
   });
   const todo = client.assignments.filter((a) => a.status !== "COMPLETE");
+  const tokens: Record<string, string> = {};
+  for (const d of client.dossiers) for (const p of d.payments) if (!p.paidAt && p.amount > 0) tokens[p.id] = await paymentToken(p.id);
   const galleries = client.galleries.filter((g) => !g.expiresAt || g.expiresAt > new Date());
   return (
     <div className="min-h-screen">
@@ -67,7 +70,7 @@ export default async function Portal() {
                   {d.payments.length === 0 ? <p className="text-sm text-slate-500">L&apos;échéancier apparaîtra à la confirmation de la réservation.</p> : (
                     <ul className="space-y-1.5 text-sm">
                       {d.payments.map((p) => (
-                        <li key={p.id} className="flex justify-between gap-3"><span>{p.label}{p.dueDate && !p.paidAt ? <span className="text-xs text-slate-500"> · avant le {date(p.dueDate)}</span> : null}</span><span className={p.paidAt ? "text-emerald-700" : ""}>{eur(p.amount)} {p.paidAt ? "✓" : ""}</span></li>
+                        <li key={p.id} className="flex items-center justify-between gap-3"><span>{p.label}{p.dueDate && !p.paidAt ? <span className="text-xs text-slate-500"> · avant le {date(p.dueDate)}</span> : null}</span><span className="flex items-center gap-2"><span className={p.paidAt ? "text-emerald-700" : ""}>{eur(p.amount)} {p.paidAt ? "✓" : ""}</span>{!p.paidAt && p.amount > 0 && <a href={`/p/${tokens[p.id]}`} className="btn-primary px-2.5 py-1 text-xs">Payer</a>}</span></li>
                       ))}
                       <li className="flex justify-between border-t border-slate-100 pt-1.5 font-medium"><span>Déjà réglé</span><span>{eur(paid)}</span></li>
                     </ul>

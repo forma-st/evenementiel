@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { saveQuoteStyle } from "@/app/(staff)/parametres/devis/actions";
-import { ACCENT_PRESETS, DEFAULT_STYLE, type PdfStyle } from "@/lib/pdfStyle";
+import { ACCENT_PRESETS, DEFAULT_STYLE, type PdfStyle } from "@/lib/pdfStyleDefs";
 
 const LAYOUTS: { id: PdfStyle["layout"]; label: string; help: string }[] = [
   { id: "classique", label: "Classique", help: "En-tête de tableau foncé, encadré client gris." },

@@ -6,13 +6,26 @@ export type BoardBooking = {
   dossierId: string; reference: string; title: string; status: string; icon: string;
   start: string; end: string; city: string | null; venue: string | null; client: string; quantity: number;
 };
-export type BoardItem = { id: string; name: string; category: string; quantity: number; outOfService: number; notes: string | null; bookings: BoardBooking[] };
+export type BoardItem = { id: string; name: string; category: string; quantity: number; outOfService: number; notes: string | null; dailyRate: number | null; replacementValue: number | null; bookings: BoardBooking[] };
 type Cat = { id: string; label: string; icon: string };
 
 const MARGIN = 8 * 36e5;
 const TZ = "Europe/Paris";
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("fr-FR", { timeZone: TZ, ...o });
 const dayKey = (iso: string) => fmt({ year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso)).split("/").reverse().join("-");
+/** Jours occupés : une soirée (moins de 24 h) compte pour son jour de début, une location pour chaque jour. */
+function spanDays(b: { start: string; end: string }) {
+  const s0 = new Date(b.start), e0 = new Date(b.end);
+  if (+e0 - +s0 < 864e5) return [{ key: dayKey(b.start), iso: b.start }];
+  const out: { key: string; iso: string }[] = [];
+  for (let t = +s0; t <= +e0 && out.length < 62; t += 864e5) {
+    const iso = new Date(t).toISOString();
+    if (!out.some((x) => x.key === dayKey(iso))) out.push({ key: dayKey(iso), iso });
+  }
+  if (!out.some((x) => x.key === dayKey(b.end))) out.push({ key: dayKey(b.end), iso: b.end });
+  return out;
+}
+const covers = (b: { start: string; end: string }, key: string) => spanDays(b).some((d) => d.key === key);
 const weekday = (iso: string) => fmt({ weekday: "long" }).format(new Date(iso));
 const dayNum = (iso: string) => fmt({ day: "numeric" }).format(new Date(iso));
 const month = (iso: string) => fmt({ month: "short" }).format(new Date(iso)).replace(".", "");
@@ -64,9 +77,9 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove }: {
   // dates de sortie (toutes catégories, pour la frise) et colonnes du planning (selon les filtres)
   const outings = useMemo(() => {
     const map = new Map<string, { key: string; iso: string; events: Map<string, BoardBooking>; units: number; overItems: Set<string>; over: number }>();
-    for (const i of items) for (const b of i.bookings) {
-      const k = dayKey(b.start);
-      const o = map.get(k) ?? { key: k, iso: b.start, events: new Map(), units: 0, overItems: new Set<string>(), over: 0 };
+    for (const i of items) for (const b of i.bookings) for (const day of spanDays(b)) {
+      const k = day.key;
+      const o = map.get(k) ?? { key: k, iso: day.iso, events: new Map(), units: 0, overItems: new Set<string>(), over: 0 };
       o.events.set(b.dossierId, b);
       o.units += b.quantity;
       if (usedAround(i, b) > usable(i)) o.overItems.add(i.id);
@@ -75,7 +88,7 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove }: {
     }
     return [...map.values()].sort((a, b) => +new Date(a.iso) - +new Date(b.iso));
   }, [items]);
-  const cols = outings.filter((o) => filtered.some((i) => i.bookings.some((b) => dayKey(b.start) === o.key)));
+  const cols = outings.filter((o) => filtered.some((i) => i.bookings.some((b) => covers(b, o.key))));
   const rows = filtered.filter((i) => showFree || i.bookings.length);
 
   const totalUnits = items.reduce((a, i) => a + i.quantity, 0);
@@ -206,7 +219,7 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove }: {
                       <div className="text-xs text-slate-500">{usable(i)} utilisable{usable(i) > 1 ? "s" : ""}{i.outOfService ? `, ${i.outOfService} en réparation` : ""}</div>
                     </td>
                     {cols.map((o) => {
-                      const bs = i.bookings.filter((b) => dayKey(b.start) === o.key);
+                      const bs = i.bookings.filter((b) => covers(b, o.key));
                       const cellId = `${i.id}|${o.key}`;
                       if (!bs.length) return <td key={o.key} className={`border-b border-slate-100 ${isWeekend(o.iso) ? "bg-slate-50" : ""}`} />;
                       const t = tone(i, bs);
@@ -234,7 +247,7 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove }: {
           if (!open) return null;
           const [itemId, key] = open.split("|");
           const i = items.find((x) => x.id === itemId);
-          const bs = i?.bookings.filter((b) => dayKey(b.start) === key) ?? [];
+          const bs = i?.bookings.filter((b) => covers(b, key)) ?? [];
           if (!i || !bs.length) return null;
           const used = Math.max(...bs.map((b) => usedAround(i, b)));
           const t = tone(i, bs);
@@ -320,6 +333,8 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove }: {
                           <label className="block"><span className="label">Quantité</span><input name="quantity" type="number" min={0} defaultValue={i.quantity} className="input" /></label>
                           <label className="block"><span className="label">En réparation</span><input name="outOfService" type="number" min={0} max={i.quantity} defaultValue={i.outOfService} className="input" /></label>
                           <label className="block"><span className="label">Notes</span><input name="notes" defaultValue={i.notes ?? ""} className="input" /></label>
+                          <label className="block"><span className="label">Location / jour (€ HT)</span><input name="dailyRate" inputMode="decimal" defaultValue={i.dailyRate ?? ""} placeholder="Ex. 60" className="input" /></label>
+                          <label className="block"><span className="label">Valeur de remplacement (€)</span><input name="replacementValue" inputMode="decimal" defaultValue={i.replacementValue ?? ""} placeholder="Ex. 900" className="input" /></label>
                           <div className="flex items-center gap-3 sm:col-span-5">
                             <button className="btn-primary">Enregistrer</button>
                             <button type="button" onClick={() => setEditing(null)} className="btn-secondary">Annuler</button>

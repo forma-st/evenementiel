@@ -111,6 +111,12 @@ model Dossier {
   source      String?    // origine du contact : site, Instagram, bouche à oreille…
   lostReason  String?
   depositPercent Float   @default(30)
+  // location de matériel sans technicien
+  cautionAmount Float?
+  cautionStatus String  @default("") // « » | A_RECEVOIR | RECUE | RESTITUEE | RETENUE
+  cautionNote   String?
+  checkout      String?  // JSON : état des lieux de départ { at, by, items: [{ id, qty, ok }], notes }
+  checkin       String?  // JSON : état des lieux de retour { at, by, items: [{ id, qty, returned, damaged, note }], notes, damages }
   equipment   DossierEquipment[]
   payments    Payment[]
   galleries   Gallery[]
@@ -469,6 +475,9 @@ model Payment {
   dueDate   DateTime?
   paidAt    DateTime?
   method    String?   // virement, chèque, espèces, CB…
+  token     String?   // lien de paiement en ligne (aléatoire, 144 bits)
+  stripeSessionId String?
+  paidOnline Boolean  @default(false)
   invoiceId String?
   invoice   Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
   createdAt DateTime  @default(now())
@@ -476,6 +485,7 @@ model Payment {
   @@index([dueDate])
   @@index([dossierId])
   @@index([paidAt])
+  @@index([token])
 }
 
 // Parc matériel (sono, lumière, photo) et réservation par prestation
@@ -485,6 +495,8 @@ model Equipment {
   category  String   @default("SONO") // SONO | LUMIERE | DJ | PHOTO | VIDEO | STRUCTURE | AUTRE
   quantity  Int      @default(1)
   outOfService Int   @default(0) // unités en réparation / indisponibles
+  dailyRate    Float?  // tarif de location à la journée (HT)
+  replacementValue Float? // valeur de remplacement (casse, perte)
   notes     String?
   active    Boolean  @default(true)
   bookings  DossierEquipment[]

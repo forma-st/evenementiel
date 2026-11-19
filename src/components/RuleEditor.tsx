@@ -1,7 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { saveRule } from "@/app/(staff)/parametres/automatisations/actions";
-import { ACTION_KINDS, TARGETS, TRIGGERS, type AutomationAction, type Target } from "@/lib/automations";
+import { ACTION_KINDS, TARGETS, TRIGGERS, type AutomationAction, type Target } from "@/lib/automationDefs";
 import { DOSSIER_STATUSES } from "@/lib/format";
 import { EVENT_KINDS } from "@/lib/presta";
 import { TASK_PRIORITIES, TASK_TYPES } from "@/lib/tasks";

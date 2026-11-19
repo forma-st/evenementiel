@@ -10,6 +10,10 @@ Outil de gestion tout-en-un pour prestataires événementiels (Next.js + Prisma 
 - **Catalogue** de formules et options, **devis** composés en quelques clics (remise, acompte, conditions), PDF à vos couleurs, **lien d'acceptation en ligne** (vous êtes prévenu à l'ouverture et à la réponse).
 - **Contrats** : modèles préétablis (DJ/sono, photographe, location) remplis automatiquement (client, date, lieu, prix, acompte…), devis joint en annexe, **signature électronique** avec dossier de preuve.
 
+**Paiement en ligne et location**
+- **Lien de paiement** par échéance (acompte, solde) : carte, Apple Pay, Google Pay via Stripe, ou virement ; encaissement, facture et automatisations mis à jour seuls (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`).
+- **Location de matériel sans technicien** : dates de retrait et de retour, devis calculé avec le tarif journalier du parc, caution, état des lieux de départ et de retour, facture des dommages à la valeur de remplacement.
+
 **Organisation**
 - **Agenda** synchronisé avec les prestations (abonnement Google Agenda), rendez-vous, visites techniques.
 - **Échéancier** acompte + solde, suivi des encaissements.

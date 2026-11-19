@@ -63,6 +63,22 @@ async function main() {
     console.log("Automatisations créées.");
   });
 
+  // Lien de paiement en ligne dans les e-mails existants (sans écraser vos modifications)
+  await once("seed.emails.paylink.v1", async () => {
+    const add: Record<string, string> = {
+      "Confirmation de réservation": "Régler l'acompte en ligne (carte ou virement) : {{lien.paiement}}",
+      "Rappel du solde": "Régler en ligne (carte ou virement) : {{lien.paiement}}",
+      "Relance paiement en retard": "Régler en ligne (carte ou virement) : {{lien.paiement}}",
+    };
+    for (const [name, line] of Object.entries(add)) {
+      const t = await db.emailTemplate.findFirst({ where: { name } });
+      if (!t || t.body.includes("{{lien.paiement}}")) continue;
+      const parts = t.body.split("\n\n");
+      parts.splice(Math.max(1, parts.length - 1), 0, line);
+      await db.emailTemplate.update({ where: { id: t.id }, data: { body: parts.join("\n\n") } });
+    }
+  });
+
   // Canal Général
   let general = await db.conversation.findFirst({ where: { kind: "CHANNEL", name: "Général" } });
   if (!general) general = await db.conversation.create({ data: { kind: "CHANNEL", name: "Général" } });
