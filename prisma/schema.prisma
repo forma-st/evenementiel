@@ -116,6 +116,7 @@ model Dossier {
   cautionStatus String  @default("") // « » | A_RECEVOIR | RECUE | RESTITUEE | RETENUE
   cautionNote   String?
   checkout      String?  // JSON : état des lieux de départ { at, by, items: [{ id, qty, ok }], notes }
+  prepList      String?  // JSON : liste de préparation du matériel { createdAt, by, items: [{ id, name, category, qty, done, doneBy, doneAt }] }
   checkin       String?  // JSON : état des lieux de retour { at, by, items: [{ id, qty, returned, damaged, note }], notes, damages }
   equipment   DossierEquipment[]
   payments    Payment[]

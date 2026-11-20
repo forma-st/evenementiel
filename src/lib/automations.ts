@@ -8,6 +8,7 @@ import { baseUrl, render, varsForDossier, type MergeVars } from "./merge";
 import { sendMail } from "./mail";
 import { getCompany } from "./company";
 import { depositOf, parseLines, totals } from "./quotes";
+import { buildPrepList } from "./prep";
 
 export * from "./automationDefs";
 import { parseActions, type AutomationAction, type Target } from "./automationDefs";
@@ -82,6 +83,22 @@ async function executeRule(rule: AutomationRule, dossierId: string, actor: Actor
         if (depth < 2) await runAutomations(d.id, a.status, actor, depth + 1);
       } else if (a.kind === "CREATE_PAYMENTS") {
         if (await createPaymentSchedule(d.id, a.balanceDaysBefore)) done.push("échéancier acompte + solde");
+      } else if (a.kind === "PREP_LIST") {
+        const list = await buildPrepList(d.id, actor.name);
+        const [assigneeId] = await resolve(a.assignTo);
+        const units = list.items.reduce((s, i) => s + i.qty, 0);
+        const exists = await db.task.findFirst({ where: { dossierId: d.id, title: { startsWith: "Préparer le matériel" }, status: { not: "FAIT" } } });
+        if (!exists)
+          await db.task.create({
+            data: {
+              title: `Préparer le matériel : ${d.title}`, type: "TACHE", priority: "HAUTE",
+              description: list.items.length ? `${units} unités à préparer, liste à cocher sur la fiche de la prestation.\n\n${list.items.map((i) => `☐ ${i.qty} × ${i.name}`).join("\n")}` : "Aucun matériel réservé : à vérifier sur la fiche de la prestation.",
+              dueDate: new Date(addDays(startOfDay(), Math.max(0, a.dueInDays)).getTime() + 12 * 36e5),
+              assigneeId: assigneeId ?? null, createdById: actor.id, dossierId: d.id, clientId: d.clientId,
+            },
+          });
+        await notify([assigneeId], { type: "TASK", title: `📋 Liste de préparation prête : ${d.title}`, body: list.items.length ? `${units} unités à préparer` : "Aucun matériel réservé", link: `/prestations/${d.id}#preparation` });
+        done.push(`liste de préparation (${list.items.length} article${list.items.length > 1 ? "s" : ""})`);
       } else if (a.kind === "POST_CHANNEL") {
         const general = await db.conversation.findFirst({ where: { kind: "CHANNEL", name: "Général" } });
         if (!general) continue;

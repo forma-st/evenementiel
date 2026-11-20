@@ -381,6 +381,11 @@ export function defaultRules(ids: { email: Record<string, string>; demande: stri
       ],
     },
     {
+      name: "J-3 : liste de préparation du matériel",
+      trigger: "EVENT_OFFSET", offsetDays: -3, onlyStatuses: "CONFIRME",
+      actions: [{ kind: "PREP_LIST", dueInDays: 1, assignTo: "DOSSIER_ASSIGNEE" }],
+    },
+    {
       name: "J-3 : dernières informations au client",
       trigger: "EVENT_OFFSET", offsetDays: -3, onlyStatuses: "CONFIRME",
       actions: [...mail("j-3")],

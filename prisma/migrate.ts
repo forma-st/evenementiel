@@ -79,6 +79,14 @@ async function main() {
     }
   });
 
+  // Règle « J-3 : liste de préparation du matériel » pour les installations existantes
+  await once("seed.automations.prep.v1", async () => {
+    if (await db.automationRule.findFirst({ where: { name: "J-3 : liste de préparation du matériel" } })) return;
+    await db.automationRule.create({
+      data: { name: "J-3 : liste de préparation du matériel", trigger: "EVENT_OFFSET", offsetDays: -3, onlyStatuses: "CONFIRME", actions: JSON.stringify([{ kind: "PREP_LIST", dueInDays: 1, assignTo: "DOSSIER_ASSIGNEE" }]) },
+    });
+  });
+
   // Canal Général
   let general = await db.conversation.findFirst({ where: { kind: "CHANNEL", name: "Général" } });
   if (!general) general = await db.conversation.create({ data: { kind: "CHANNEL", name: "Général" } });

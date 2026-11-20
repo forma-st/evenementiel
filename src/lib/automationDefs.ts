@@ -33,6 +33,7 @@ export type AutomationAction =
   | { kind: "SEND_QUESTIONNAIRE"; questionnaireId: string }
   | { kind: "SET_STATUS"; status: string }
   | { kind: "CREATE_PAYMENTS"; balanceDaysBefore: number }
+  | { kind: "PREP_LIST"; dueInDays: number; assignTo: Target }
   | { kind: "POST_CHANNEL"; message: string };
 
 export const ACTION_KINDS = [
@@ -42,6 +43,7 @@ export const ACTION_KINDS = [
   { id: "SEND_QUESTIONNAIRE", label: "Envoyer un questionnaire au client" },
   { id: "SET_STATUS", label: "Changer le statut de la prestation" },
   { id: "CREATE_PAYMENTS", label: "Créer l'échéancier acompte + solde" },
+  { id: "PREP_LIST", label: "Créer la liste de préparation du matériel" },
   { id: "POST_CHANNEL", label: "Publier dans le canal Général" },
 ] as const;
 
@@ -83,6 +85,7 @@ export function describeAction(
     case "SEND_QUESTIONNAIRE": return `Questionnaire « ${ctx.questionnaires?.find((q) => q.id === a.questionnaireId)?.title ?? "?"} » dans l'espace client`;
     case "SET_STATUS": return `Passer la prestation à « ${statusOf(a.status).label} »`;
     case "CREATE_PAYMENTS": return `Échéancier : acompte à la réservation, solde ${a.balanceDaysBefore} j avant`;
+    case "PREP_LIST": return `Liste de préparation du matériel + tâche pour ${who(a.assignTo)}, à faire J+${a.dueInDays}`;
     case "POST_CHANNEL": return `Message dans #Général : « ${a.message} »`;
   }
 }

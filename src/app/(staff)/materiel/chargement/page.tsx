@@ -5,18 +5,19 @@ import { fromParis, time, TZ } from "@/lib/format";
 import { EQUIPMENT_CATEGORIES, eventKind, servicesLabel } from "@/lib/presta";
 import { HOLDING_STATUSES } from "@/lib/equipment";
 import { PrintButton } from "@/components/PrintButton";
+import { parsePrep } from "@/lib/prep";
 
 export const metadata = { title: "Liste de chargement" };
 
 /** Liste de chargement d'une journée : tout ce qui sort, prestation par prestation, à cocher (imprimable). */
-export default async function LoadingList({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
+export default async function LoadingList({ searchParams }: { searchParams: Promise<{ date?: string; prestation?: string }> }) {
   await requireStaff();
   const sp = await searchParams;
   const day = /^\d{4}-\d{2}-\d{2}$/.test(sp.date ?? "") ? sp.date! : new Date().toISOString().slice(0, 10);
   const start = fromParis(day, "00:00");
   const end = new Date(start.getTime() + 864e5);
   const dossiers = await db.dossier.findMany({
-    where: { status: { in: HOLDING_STATUSES }, eventStart: { gte: start, lt: end } },
+    where: sp.prestation ? { id: sp.prestation } : { status: { in: HOLDING_STATUSES }, eventStart: { gte: start, lt: end } },
     include: { client: true, assignee: true, equipment: { include: { equipment: true } } },
     orderBy: { eventStart: "asc" },
   });
@@ -34,7 +35,7 @@ export default async function LoadingList({ searchParams }: { searchParams: Prom
   return (
     <div className="mx-auto max-w-4xl space-y-6 print:max-w-none">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <Link href="/materiel" className="text-sm text-slate-500 hover:text-slate-800">← Matériel</Link>
+        {sp.prestation ? <Link href={`/prestations/${sp.prestation}#preparation`} className="text-sm text-slate-500 hover:text-slate-800">← Prestation</Link> : <Link href="/materiel" className="text-sm text-slate-500 hover:text-slate-800">← Matériel</Link>}
         <div className="flex items-center gap-2">
           <Link href={`?date=${shift(-1)}`} className="btn-secondary px-2.5" aria-label="Jour précédent">‹</Link>
           <Link href={`?date=${shift(1)}`} className="btn-secondary px-2.5" aria-label="Jour suivant">›</Link>
@@ -43,10 +44,10 @@ export default async function LoadingList({ searchParams }: { searchParams: Prom
       </div>
       <header>
         <h1 className="text-3xl font-semibold tracking-tight first-letter:uppercase">{label}</h1>
-        <p className="mt-1 text-slate-600">{dossiers.length ? `Liste de chargement : ${dossiers.length} prestation${dossiers.length > 1 ? "s" : ""}, ${summary.reduce((a, s) => a + s.qty, 0)} unités.` : "Aucune prestation avec du matériel ce jour-là."}</p>
+        <p className="mt-1 text-slate-600">{sp.prestation && dossiers.length ? `Liste de préparation : ${summary.reduce((a, s) => a + s.qty, 0)} unités.` : dossiers.length ? `Liste de chargement : ${dossiers.length} prestation${dossiers.length > 1 ? "s" : ""}, ${summary.reduce((a, s) => a + s.qty, 0)} unités.` : "Aucune prestation avec du matériel ce jour-là."}</p>
       </header>
 
-      {summary.length > 0 && (
+      {summary.length > 0 && dossiers.length > 1 && (
         <section className="card p-5 print:border-0 print:p-0 print:shadow-none">
           <h2 className="mb-3 font-semibold">Total à charger</h2>
           <ul className="grid gap-x-8 gap-y-1.5 sm:grid-cols-2">
@@ -83,7 +84,9 @@ export default async function LoadingList({ searchParams }: { searchParams: Prom
             <ul className="mt-4 divide-y divide-slate-100 border-t border-slate-100">
               {d.equipment.sort((a, b) => catOrder.indexOf(a.equipment.category) - catOrder.indexOf(b.equipment.category) || a.equipment.name.localeCompare(b.equipment.name)).map((e) => (
                 <li key={e.equipmentId} className="flex items-center gap-3 py-2 text-sm">
-                  <span className="h-4 w-4 shrink-0 rounded border-2 border-slate-400" aria-hidden />
+                  {parsePrep(d.prepList)?.items.find((i) => i.id === e.equipmentId && i.done && i.qty === e.quantity)
+                    ? <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 border-emerald-600 bg-emerald-600 text-[10px] text-white" aria-label="préparé">✓</span>
+                    : <span className="h-4 w-4 shrink-0 rounded border-2 border-slate-400" aria-hidden />}
                   <span className="w-8 text-right font-semibold tabular-nums">{e.quantity}</span>
                   <span className="flex-1">{e.equipment.name}</span>
                   <span className="text-xs text-slate-400">retour ☐</span>

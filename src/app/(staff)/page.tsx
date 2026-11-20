@@ -7,6 +7,7 @@ import { date, time } from "@/lib/format";
 import { addDays, isOverdue, startOfDay, taskPriority, taskType } from "@/lib/tasks";
 import { eventType } from "@/lib/events";
 import { eventKind } from "@/lib/presta";
+import { parsePrep } from "@/lib/prep";
 import { SIGNATURE_STATUSES } from "@/lib/signature";
 import { WIDGETS, WIDGET_IDS, allowed, readLayout, type WidgetId } from "@/lib/widgets";
 import { conversationsFor } from "@/lib/chat";
@@ -96,6 +97,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                   <div className="w-24 shrink-0 text-xs text-slate-500">{date(d.eventStart)}<br />{time(d.eventStart!)}</div>
                   <div className="min-w-0 flex-1"><div className="truncate font-medium">{eventKind(d.eventType).icon} {d.title}</div><div className="truncate text-xs text-slate-500">{[d.venueName, d.venueCity].filter(Boolean).join(", ") || d.client.name}</div></div>
                   <span className="hidden text-xs text-slate-500 sm:block">{d.assignee?.name ?? "non assigné"}</span>
+                  {(() => { const pl = parsePrep(d.prepList); if (!pl || !pl.items.length) return null; const n = pl.items.filter((i) => i.done).length; return <span title="Préparation du matériel" className={`badge ${n === pl.items.length ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>📋 {n}/{pl.items.length}</span>; })()}
                   {d.status === "OPTION" && <span className="badge bg-amber-100 text-amber-800">option</span>}
                 </Link>
               </li>

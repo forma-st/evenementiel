@@ -16,6 +16,7 @@ const blank = (kind: AutomationAction["kind"], c: { q?: string; t?: string }): A
   : kind === "SEND_EMAIL" ? { kind, templateId: c.t ?? "" }
   : kind === "SET_STATUS" ? { kind, status: "CONFIRME" }
   : kind === "CREATE_PAYMENTS" ? { kind, balanceDaysBefore: 7 }
+  : kind === "PREP_LIST" ? { kind, dueInDays: 1, assignTo: "DOSSIER_ASSIGNEE" }
   : { kind, message: "" };
 
 function TargetSelect({ value, onChange, users }: { value: Target; onChange: (t: Target) => void; users: Opt[] }) {
@@ -124,6 +125,12 @@ export function RuleEditor({ rule, users, questionnaires, templates, onDone }: {
             )}
             {a.kind === "CREATE_PAYMENTS" && (
               <label className="flex items-center gap-2 text-sm">Acompte selon le devis, solde dû <input type="number" min={0} max={90} value={a.balanceDaysBefore} onChange={(e) => set(i, { balanceDaysBefore: Number(e.target.value) })} className="input w-20" /> jours avant l&apos;événement</label>
+            )}
+            {a.kind === "PREP_LIST" && (
+              <div className="grid gap-2 sm:grid-cols-3">
+                <label className="flex items-center gap-2 text-sm">Tâche à faire J+<input type="number" min={0} max={30} value={a.dueInDays} onChange={(e) => set(i, { dueInDays: Number(e.target.value) })} className="input w-20" /></label>
+                <div className="sm:col-span-2"><TargetSelect value={a.assignTo} onChange={(t) => set(i, { assignTo: t })} users={users} /></div>
+              </div>
             )}
             {a.kind === "POST_CHANNEL" && <input value={a.message} onChange={(e) => set(i, { message: e.target.value })} placeholder="Ex. : 🎉 {{prestation.titre}} confirmé !" className="input" />}
           </div>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { Back, Badge, Card, Empty, PageHeader } from "@/components/ui";
-import { DOSSIER_STATUSES, date, dateTime, eur, quoteStatus, statusOf, time, TZ } from "@/lib/format";
+import { DOSSIER_STATUSES, date, dateTime, eur, parisParts, quoteStatus, statusOf, time, TZ } from "@/lib/format";
 import { addNote, addPayment, deleteDossier, deletePayment, generatePayments, markPaymentPaid, sendEmailToClient, sendQuestionnaire, setDossierEquipment, removeDossierEquipment, setDossierStatus } from "../../actions";
 import { TaskBoard } from "@/components/TaskBoard";
 import { toRow } from "@/lib/tasks";
@@ -15,6 +15,8 @@ import { EquipmentPicker } from "@/components/EquipmentPicker";
 import { equipmentAvailability } from "@/lib/equipment";
 import { paymentToken } from "@/lib/stripe";
 import { RentalPanel } from "@/components/RentalPanel";
+import { PrepChecklist } from "@/components/PrepChecklist";
+import { parsePrep, prepOutdated } from "@/lib/prep";
 import { parseJson, rentalDays, type Checkin, type Checkout } from "@/lib/rental";
 import { invoiceFromPayment } from "../../factures/actions";
 import { INVOICE_KINDS, INVOICE_STATUSES } from "@/lib/invoices";
@@ -317,6 +319,17 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
               </ul>
             )}
           </Card>
+
+          {d.eventType !== "LOCATION" && (
+            <PrepChecklist
+              dossierId={id}
+              list={parsePrep(d.prepList)}
+              outdated={prepOutdated(parsePrep(d.prepList), d.equipment)}
+              hasEquipment={d.equipment.length > 0}
+              day={d.eventStart ? parisParts(d.eventStart).key : null}
+              autoDays={days}
+            />
+          )}
 
           <div id="materiel" className="scroll-mt-6"><Card title="Matériel réservé">
             {equipment.length > 0 ? (

@@ -20,6 +20,7 @@ const valid = (a: AutomationAction) => {
     case "SEND_EMAIL": return !!a.templateId;
     case "SET_STATUS": return !!a.status;
     case "CREATE_PAYMENTS": return true;
+    case "PREP_LIST": return true;
     default: return !!a.message.trim();
   }
 };
