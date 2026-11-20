@@ -27,7 +27,7 @@ const pct = (cur: number, prev: number) => (prev ? Math.round(((cur - prev) / pr
 function Delta({ value }: { value: number | null }) {
   if (value === null) return <span className="text-xs text-slate-400">—</span>;
   const up = value >= 0;
-  return <span className={`text-xs font-medium ${up ? "text-emerald-700" : "text-brand-700"}`}>{up ? "▲" : "▼"} {Math.abs(value)} % vs période préc.</span>;
+  return <span className={`text-xs font-medium ${up ? "delta-up text-emerald-700" : "delta-down text-brand-700"}`}>{up ? "▲" : "▼"} {Math.abs(value)} % vs période préc.</span>;
 }
 const More = ({ href, children }: { href: string; children: React.ReactNode }) => <Link href={href} className="text-sm text-link-600 hover:underline">{children}</Link>;
 
@@ -77,10 +77,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       body: (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3">
           {tiles.map((t) => {
-            const inner = (<><div className="text-xs text-slate-500">{t.label}</div><div className="mt-1 text-2xl font-semibold tabular-nums">{t.value}</div><div className="mt-1">{t.sub}</div></>);
+            const inner = (<><div className="kpi-label text-xs">{t.label}</div><div className="mt-1 text-2xl font-semibold tabular-nums">{t.value}</div><div className="kpi-sub mt-1">{t.sub}</div></>);
             return t.href
-              ? <Link key={t.label} href={t.href} className="rounded-lg border border-slate-100 bg-slate-50/50 px-4 py-3 hover:border-link-500">{inner}</Link>
-              : <div key={t.label} className="rounded-lg border border-slate-100 bg-slate-50/50 px-4 py-3">{inner}</div>;
+              ? <Link key={t.label} href={t.href} className="kpi-tile rounded-xl px-4 py-3 transition hover:-translate-y-0.5">{inner}</Link>
+              : <div key={t.label} className="kpi-tile rounded-xl px-4 py-3">{inner}</div>;
           })}
         </div>
       ),

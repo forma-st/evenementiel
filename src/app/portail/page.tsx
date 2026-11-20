@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { requireClient } from "@/lib/auth";
 import { Badge, Card, Empty } from "@/components/ui";
 import { date, eur, quoteStatus, statusOf, time, TZ } from "@/lib/format";
-import { eventKind, servicesLabel } from "@/lib/presta";
+import { eventKind, isGearOnly, servicesLabel } from "@/lib/presta";
 import { getCompany } from "@/lib/company";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { paymentToken } from "@/lib/stripe";
@@ -17,7 +17,7 @@ export default async function Portal() {
   const client = await db.client.findUniqueOrThrow({
     where: { id: user.clientId },
     include: {
-      dossiers: { where: { status: { not: "PERDU" } }, include: { payments: { orderBy: { dueDate: "asc" } } }, orderBy: [{ eventStart: { sort: "desc", nulls: "first" } }] },
+      dossiers: { where: { status: { not: "PERDU" } }, include: { payments: { orderBy: { dueDate: "asc" } }, musicPlan: { select: { id: true } } }, orderBy: [{ eventStart: { sort: "desc", nulls: "first" } }] },
       quotes: { where: { status: { notIn: ["BROUILLON"] } }, orderBy: { createdAt: "desc" } },
       assignments: { include: { questionnaire: true }, orderBy: { createdAt: "desc" } },
       invoices: { where: { number: { not: null } }, orderBy: { issueDate: "desc" } },
@@ -64,6 +64,7 @@ export default async function Portal() {
                   {d.services && <div className="flex justify-between gap-3"><dt className="text-slate-500">Prestations</dt><dd className="text-right">{servicesLabel(d.services)}</dd></div>}
                   {d.venueAddress && <div className="flex justify-between gap-3"><dt className="text-slate-500">Adresse</dt><dd className="text-right">{[d.venueAddress, d.venueCity].filter(Boolean).join(", ")}</dd></div>}
                   {d.guests && <div className="flex justify-between gap-3"><dt className="text-slate-500">Invités</dt><dd>{d.guests}</dd></div>}
+                  {!isGearOnly(d.eventType) && <div className="pt-2"><Link href={`/portail/musique/${d.id}`} className="btn-secondary">🎵 Ma musique{d.musicPlan ? "" : " : à compléter"}</Link></div>}
                 </dl>
                 <div>
                   <div className="mb-2 text-sm font-medium">Règlements</div>

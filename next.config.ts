@@ -12,10 +12,11 @@ const csp = (frame: string) =>
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline'", // scripts de Next.js et sélection du thème avant affichage
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data: blob: ${BLOB}`,
+    `img-src 'self' data: blob: ${BLOB} https://i.scdn.co`, // pochettes Spotify
     `media-src 'self' blob: ${BLOB}`,
     "font-src 'self' data:",
     `connect-src 'self' https://vercel.com ${BLOB}`,
+    "frame-src 'self' https://open.spotify.com", // lecteur de playlist
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

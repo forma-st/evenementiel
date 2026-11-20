@@ -2,6 +2,7 @@
 import { useState, useTransition } from "react";
 import { createRentalQuote, invoiceDamages, saveCheckin, saveCheckout, setCautionStatus } from "@/app/(staff)/prestations/rental-actions";
 import type { Checkin, Checkout } from "@/lib/rental";
+import { toast } from "@/lib/toast";
 
 type Item = { id: string; name: string; qty: number; dailyRate: number | null; replacementValue: number | null };
 const eur = (n: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n);
@@ -85,7 +86,7 @@ export function RentalPanel({ loan = false, dossierId, start, end, days, items, 
             <div className="space-y-2 p-4">
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="État constaté, accessoires fournis (câbles, housses, pieds)…" className="input" />
               <div className="flex gap-2">
-                <button disabled={pending} onClick={() => run(async () => { await saveCheckout(dossierId, outItems, notes); setStep(""); setNotes(""); })} className="btn-primary">Valider la remise</button>
+                <button disabled={pending} onClick={() => run(async () => { await saveCheckout(dossierId, outItems, notes); setStep(""); setNotes(""); toast(loan ? "Sortie du matériel enregistrée" : "Matériel remis au client", { tone: "success" }); })} className="btn-primary">Valider la remise</button>
                 <button onClick={() => setStep("")} className="btn-secondary">Annuler</button>
               </div>
             </div>
@@ -119,7 +120,7 @@ export function RentalPanel({ loan = false, dossierId, start, end, days, items, 
               {est > 0 && <p className="text-sm font-medium text-rose-700">Dommages estimés : {eur(est)} (valeur de remplacement)</p>}
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Remarques sur le retour…" className="input" />
               <div className="flex gap-2">
-                <button disabled={pending} onClick={() => run(async () => { await saveCheckin(dossierId, inItems, notes); setStep(""); })} className="btn-primary">Valider le retour</button>
+                <button disabled={pending} onClick={() => run(async () => { await saveCheckin(dossierId, inItems, notes); setStep(""); toast("Retour du matériel enregistré", { tone: "success" }); })} className="btn-primary">Valider le retour</button>
                 <button onClick={() => setStep("")} className="btn-secondary">Annuler</button>
               </div>
             </div>

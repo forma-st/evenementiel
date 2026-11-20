@@ -119,6 +119,7 @@ model Dossier {
   prepList      String?  // JSON : liste de préparation du matériel { createdAt, by, items: [{ id, name, category, qty, done, doneBy, doneAt }] }
   checkin       String?  // JSON : état des lieux de retour { at, by, items: [{ id, qty, returned, damaged, note }], notes, damages }
   equipment   DossierEquipment[]
+  musicPlan   MusicPlan?
   payments    Payment[]
   galleries   Gallery[]
   invoices    Invoice[]
@@ -460,9 +461,25 @@ model EmailLog {
   body      String
   status    String   @default("ENVOYE") // ENVOYE | SIMULE | ERREUR
   error     String?
+  bulkId    String?  // envoi groupé d'origine
   createdAt DateTime @default(now())
 
   @@index([dossierId])
+  @@index([bulkId])
+}
+
+// E-mail groupé aux clients d'une sélection de prestations
+model BulkEmail {
+  id          String   @id @default(cuid())
+  subject     String
+  body        String
+  filters     String   // JSON : période, types, statuts
+  recipients  Int      @default(0)
+  sent        Int      @default(0)
+  failed      Int      @default(0)
+  simulated   Int      @default(0)
+  createdById String?
+  createdAt   DateTime @default(now())
 }
 
 // Échéancier : acompte, solde…
@@ -654,4 +671,19 @@ model LoginEvent {
 
   @@index([userId, createdAt])
   @@index([email, createdAt])
+}
+
+// Planning musical partagé avec le client (playlist Spotify, moments clés, à passer / à éviter)
+model MusicPlan {
+  id            String   @id @default(cuid())
+  dossierId     String   @unique
+  dossier       Dossier  @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  playlistUrl   String?
+  moments       String   @default("[]") // JSON [{ id, label, time, song, note }]
+  mustPlay      String   @default("[]") // JSON [{ id, title, artist, url }]
+  doNotPlay     String   @default("[]")
+  notes         String?
+  clientCanEdit Boolean  @default(true)
+  updatedBy     String?
+  updatedAt     DateTime @updatedAt
 }

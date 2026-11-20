@@ -15,6 +15,9 @@ import { EquipmentPicker } from "@/components/EquipmentPicker";
 import { equipmentAvailability } from "@/lib/equipment";
 import { paymentToken } from "@/lib/stripe";
 import { RentalPanel } from "@/components/RentalPanel";
+import { MusicPlanner } from "@/components/MusicPlanner";
+import { musicData } from "@/lib/musicServer";
+import { spotifyConfigured } from "@/lib/spotify";
 import { PrepChecklist } from "@/components/PrepChecklist";
 import { parsePrep, prepOutdated } from "@/lib/prep";
 import { parseJson, rentalDays, type Checkin, type Checkout } from "@/lib/rental";
@@ -41,6 +44,7 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
       include: {
         client: true, assignee: true,
         activities: { include: { user: true }, orderBy: { createdAt: "desc" }, take: 80 },
+        musicPlan: true,
         quotes: { orderBy: { createdAt: "desc" } },
         assignments: { include: { questionnaire: true }, orderBy: { createdAt: "desc" } },
         signatures: { select: { id: true, title: true, status: true, createdAt: true }, orderBy: { createdAt: "desc" } },
@@ -166,6 +170,27 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
               </ul>
             )}
           </Card>}
+
+          {!isGearOnly(d.eventType) && (
+            <section id="musique" className="card scroll-mt-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-3">
+                <h2 className="font-semibold">🎵 Planning musical {d.musicPlan && !d.musicPlan.clientCanEdit && <span className="badge ml-1 bg-emerald-100 text-emerald-700">validé</span>}</h2>
+                <Link href={`/prestations/${id}/feuille-de-route`} className="text-sm text-link-600 hover:underline">🗒 Feuille de route DJ</Link>
+              </div>
+              <div className="p-5">
+                <MusicPlanner
+                  dossierId={id}
+                  role="staff"
+                  initial={musicData(d.musicPlan, d.eventType)}
+                  clientCanEdit={d.musicPlan?.clientCanEdit ?? true}
+                  spotify={spotifyConfigured()}
+                  updatedBy={d.musicPlan?.updatedBy}
+                  updatedAt={d.musicPlan?.updatedAt.toISOString()}
+                />
+                <p className="mt-4 text-xs text-slate-500">Le client le remplit aussi depuis son espace client (rubrique « Musique »).</p>
+              </div>
+            </section>
+          )}
 
           {!loan && <Card title="Échéancier et paiements" actions={d.payments.length === 0 ? <form action={generatePayments.bind(null, id)}><button className="text-sm text-link-600 hover:underline">Créer acompte + solde</button></form> : undefined}>
             {d.payments.length === 0 ? <Empty>Aucune échéance. L&apos;échéancier est créé automatiquement à la confirmation.</Empty> : (

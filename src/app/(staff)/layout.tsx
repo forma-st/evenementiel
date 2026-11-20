@@ -7,6 +7,7 @@ import { ChatDock } from "@/components/ChatDock";
 import { getCompany } from "@/lib/company";
 import { Suspense } from "react";
 import { ActivityBar } from "@/components/ActivityBar";
+import { Toaster } from "@/components/Toaster";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const user = await requireStaff();
@@ -22,6 +23,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       />
       <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8 print:p-0">{children}</main>
       {c.teamChat && <ChatDock />}
+      <Toaster />
     </div>
   );
 }
