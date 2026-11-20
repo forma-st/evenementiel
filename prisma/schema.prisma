@@ -726,3 +726,45 @@ model OptionRequest {
 
   @@index([dossierId])
 }
+
+// Bourse d'équipe : une demande (prestation, rendez-vous, renfort) proposée à l'équipe, chacun répond s'il est dispo
+model TeamRequest {
+  id          String      @id @default(cuid())
+  createdById String
+  kind        String      @default("PRESTA") // PRESTA | RDV | RENFORT
+  title       String
+  eventType   String      @default("AUTRE")
+  date        String?     // AAAA-MM-JJ
+  startTime   String?
+  endTime     String?
+  venue       String?
+  city        String?
+  clientName  String?
+  clientPhone String?
+  clientEmail String?
+  guests      Int?
+  services    String      @default("")
+  budget      Float?
+  notes       String?
+  dossierId   String?     // prestation liée (renfort) ou créée à partir de la demande
+  status      String      @default("OUVERTE") // OUVERTE | ATTRIBUEE | CONVERTIE | ANNULEE
+  assigneeId  String?
+  replies     TeamReply[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([status, createdAt])
+}
+
+model TeamReply {
+  id        String      @id @default(cuid())
+  requestId String
+  request   TeamRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  userId    String
+  answer    String      // DISPO | PAS_DISPO | PEUT_ETRE
+  comment   String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([requestId, userId])
+}

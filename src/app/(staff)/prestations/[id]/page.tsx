@@ -92,6 +92,7 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
           <>
             {perms.canCreateQuotes && !loan && <Link href={`/devis/nouveau?dossierId=${id}`} className="btn-secondary">+ Devis</Link>}
             {perms.canSendSignatures && !loan && <Link href={`/contrats/generer?dossierId=${id}`} className="btn-secondary">✍ Contrat</Link>}
+            {!isGearOnly(d.eventType) && <Link href={`/equipe/demandes?renfort=${id}`} className="btn-secondary">🙋 Renfort</Link>}
             <Link href={`/galeries/nouvelle?dossierId=${id}`} className="btn-secondary">📷 Galerie</Link>
             <Link href={`/prestations/${id}/modifier`} className="btn-primary">Modifier</Link>
             {perms.canDeleteDossiers && (

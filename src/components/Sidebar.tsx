@@ -6,13 +6,13 @@ import { Icon } from "@/components/Icon";
 import { Logo } from "@/components/Logo";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 
-export type Badges = { lateTasks: number; unreadMessages: number; unreadNotifs: number };
+export type Badges = { lateTasks: number; unreadMessages: number; unreadNotifs: number; teamRequests: number };
 
 /** Emoji de chaque rubrique (plus parlant que des pictogrammes au trait). */
 const EMOJI: Record<string, string> = {
   "/": "🏠", "/notifications": "🔔", "/messages": "💬", "/prestations": "🎉", "/agenda": "📅", "/clients": "👥",
   "/emails": "✉️", "/taches": "✅", "/devis": "📝", "/factures": "🧾", "/catalogue": "📚", "/comptabilite": "📊",
-  "/contrats": "📜", "/signatures": "✍️", "/galeries": "📸", "/materiel": "🔊", "/preparer": "📋", "/questionnaires": "🗳️", "/parametres": "⚙️",
+  "/contrats": "📜", "/signatures": "✍️", "/galeries": "📸", "/materiel": "🔊", "/preparer": "📋", "/questionnaires": "🗳️", "/parametres": "⚙️", "/equipe/demandes": "🙋",
 };
 const Emo = ({ href, big = false }: { href: string; big?: boolean }) => <span aria-hidden className={`shrink-0 leading-none ${big ? "text-[21px]" : "text-base"}`}>{EMOJI[href] ?? "•"}</span>;
 
@@ -47,6 +47,7 @@ export function Sidebar({ user, mail, badges: initial, show }: {
     { href: "/notifications", label: "Notifications", icon: "bell", badge: "unreadNotifs", badgeColor: "bg-link-600" },
     ...(show.chat ? [{ href: "/messages", label: "Messages", icon: "chat", badge: "unreadMessages" as const, badgeColor: "bg-link-600" }] : []),
     { href: "/prestations", label: "Prestations", icon: "headphones" },
+    { href: "/equipe/demandes", label: "Demandes équipe", icon: "users", badge: "teamRequests", badgeColor: "bg-amber-500" },
     { href: "/agenda", label: "Agenda", icon: "calendar" },
     { href: "/clients", label: "Clients", icon: "users" },
     { href: "/emails", label: "E-mails groupés", icon: "send" },
