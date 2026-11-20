@@ -16,7 +16,7 @@ function PrepLine({ r }: { r: PrepRow }) {
   const ready = r.hasList && r.total > 0 && r.done === r.total;
   return (
     <li>
-      <Link href={`/prestations/${r.id}${r.gearOnly ? "" : "#preparation"}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50">
+      <Link href={`/preparer/${r.id}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50">
         <span className={`w-20 shrink-0 rounded-md px-2 py-1 text-center text-xs font-semibold ${n <= 1 ? "bg-amber-100 text-amber-800" : n <= 3 ? "bg-brand-50 text-brand-700" : "bg-slate-100 text-slate-600"}`}>{when(n)}</span>
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium">{r.icon} {r.title}</div>

@@ -47,6 +47,7 @@ export function Sidebar({ user, mail, badges: initial, show }: {
     ...(show.signatures ? [{ href: "/contrats", label: "Contrats", icon: "✍" }, { href: "/signatures", label: "Signatures", icon: "🖋" }] : []),
     { href: "/galeries", label: "Galeries", icon: "📷" },
     { href: "/materiel", label: "Matériel", icon: "🔊" },
+    { href: "/preparer", label: "Préparation", icon: "📋" },
     ...(show.questionnaires ? [{ href: "/questionnaires", label: "Questionnaires", icon: "☑" }] : []),
     { href: "/parametres", label: "Paramètres", icon: "⚙" },
   ];

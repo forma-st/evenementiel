@@ -1,7 +1,29 @@
 /** Planning musical : types et outils partagés (navigateur et serveur). */
 export type Moment = { id: string; label: string; time: string; song: string; note: string };
 export type Track = { id: string; title: string; artist: string; url?: string };
-export type MusicData = { playlistUrl: string; moments: Moment[]; mustPlay: Track[]; doNotPlay: Track[]; notes: string };
+export type Contact = { id: string; name: string; role: string; phone: string };
+/** Infos pratiques remplies par le client (feuille de route). */
+export type PlanInfo = {
+  contacts: Contact[]; arrival: string; access: string; parking: string; power: string;
+  guests: string; kids: string; micro: string; meal: string; other: string;
+};
+export const EMPTY_INFO: PlanInfo = { contacts: [], arrival: "", access: "", parking: "", power: "", guests: "", kids: "", micro: "", meal: "", other: "" };
+export type MusicData = { playlistUrl: string; moments: Moment[]; mustPlay: Track[]; doNotPlay: Track[]; notes: string; info: PlanInfo };
+
+/** Date limite de modification par le client (J-x à minuit, heure de Paris approximée). */
+export function planDeadline(eventStart: Date | string | null | undefined, days: number) {
+  if (!eventStart) return null;
+  const d = new Date(eventStart);
+  return new Date(d.getTime() - days * 864e5);
+}
+/** Le client peut-il encore modifier ? (ouvert par l'équipe, et avant la date limite sauf réouverture) */
+export function clientEditable(p: { clientCanEdit: boolean; forceOpen: boolean; deadlineDays: number } | null | undefined, eventStart: Date | string | null | undefined, now = new Date()) {
+  const open = p?.clientCanEdit ?? true;
+  const dl = planDeadline(eventStart, p?.deadlineDays ?? 7);
+  if (!open) return { editable: false, deadline: dl, reason: "locked" as const };
+  if (dl && now >= dl && !p?.forceOpen) return { editable: false, deadline: dl, reason: "deadline" as const };
+  return { editable: true, deadline: dl, reason: null };
+}
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -38,5 +60,16 @@ export function cleanMusic(d: Partial<MusicData>): MusicData {
     mustPlay: arr(d.mustPlay, 200).map(track).filter((t) => t.title),
     doNotPlay: arr(d.doNotPlay, 200).map(track).filter((t) => t.title),
     notes: str(d.notes, 5000),
+    info: cleanInfo(d.info),
+  };
+}
+
+export function cleanInfo(v: unknown): PlanInfo {
+  const x = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+  const f = (k: keyof PlanInfo) => str(x[k], 1000);
+  return {
+    contacts: arr(x.contacts, 20).map((c: Record<string, unknown>) => ({ id: str(c?.id, 20) || uid(), name: str(c?.name, 120), role: str(c?.role, 120), phone: str(c?.phone, 40) })).filter((c) => c.name || c.phone),
+    arrival: f("arrival"), access: f("access"), parking: f("parking"), power: f("power"),
+    guests: f("guests"), kids: f("kids"), micro: f("micro"), meal: f("meal"), other: str(x.other, 3000),
   };
 }

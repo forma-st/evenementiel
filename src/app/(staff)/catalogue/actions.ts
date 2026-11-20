@@ -56,3 +56,10 @@ export async function deleteEquipment(id: string) {
   await db.equipment.delete({ where: { id } });
   revalidatePath("/materiel");
 }
+
+/** Proposer (ou non) l'article dans l'onglet « Options » de l'espace organisation des clients. */
+export async function toggleClientOption(id: string, on: boolean) {
+  await requirePerm(await requireStaff(), "canCreateQuotes", "gérer le catalogue");
+  await db.catalogItem.update({ where: { id }, data: { clientOption: on } });
+  revalidatePath("/catalogue");
+}

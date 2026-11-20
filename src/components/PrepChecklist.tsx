@@ -8,8 +8,8 @@ const CAT: Record<string, string> = { SONO: "Sonorisation", DJ: "Régie DJ", LUM
 const when = (iso: string) => new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" }).format(new Date(iso));
 
 /** Liste de préparation du matériel : à cocher en chargeant, progression, impression. */
-export function PrepChecklist({ dossierId, list, outdated, hasEquipment, day, autoDays }: {
-  dossierId: string; list: PrepList | null; outdated: boolean; hasEquipment: boolean; day: string | null; autoDays: number | null;
+export function PrepChecklist({ dossierId, list, outdated, hasEquipment, day, autoDays, qr }: {
+  qr?: string; dossierId: string; list: PrepList | null; outdated: boolean; hasEquipment: boolean; day: string | null; autoDays: number | null;
 }) {
   const [pending, start] = useTransition();
   const [items, toggle] = useOptimistic(list?.items ?? [], (state, { id, done }: { id: string; done: boolean }) => state.map((i) => (i.id === id ? { ...i, done } : i)));
@@ -23,6 +23,7 @@ export function PrepChecklist({ dossierId, list, outdated, hasEquipment, day, au
         <h2 className="font-semibold">Préparation du matériel</h2>
         {list && (
           <div className="flex items-center gap-3 text-sm">
+            <Link href={`/preparer/${dossierId}`} className="font-medium text-link-600 hover:underline">📱 Plein écran</Link>
             {day && <Link href={`/materiel/chargement?date=${day}&prestation=${dossierId}`} className="text-link-600 hover:underline">Imprimer</Link>}
             <button disabled={pending} onClick={() => start(() => syncPrepList(dossierId))} className="text-link-600 hover:underline">Actualiser</button>
           </div>
@@ -47,6 +48,16 @@ export function PrepChecklist({ dossierId, list, outdated, hasEquipment, day, au
           </div>
           {outdated && (
             <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Le matériel réservé a changé depuis la création de la liste. <button onClick={() => start(() => syncPrepList(dossierId))} className="font-medium underline">Mettre à jour</button> (les cases cochées sont conservées).</p>
+          )}
+          {qr && (
+            <details className="rounded-lg bg-slate-50 px-3 py-2 text-sm ring-1 ring-slate-200/60">
+              <summary className="cursor-pointer text-slate-600">📱 Cocher depuis un téléphone ou une tablette</summary>
+              <div className="mt-2 flex items-center gap-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qr} alt="QR code de la liste de préparation" className="h-32 w-32 rounded bg-[#fff] p-1" />
+                <p className="text-xs text-slate-500">Scannez avec l&apos;appareil photo : la liste s&apos;ouvre en grand, à cocher du doigt (connexion avec votre compte). Astuce : « Ajouter à l&apos;écran d&apos;accueil » pour l&apos;avoir comme une appli.</p>
+              </div>
+            </details>
           )}
           {items.length === 0 && <p className="text-sm text-slate-500">Aucun matériel réservé pour cette prestation.</p>}
           {cats.map((c) => (

@@ -120,6 +120,7 @@ model Dossier {
   checkin       String?  // JSON : état des lieux de retour { at, by, items: [{ id, qty, returned, damaged, note }], notes, damages }
   equipment   DossierEquipment[]
   musicPlan   MusicPlan?
+  optionRequests OptionRequest[]
   payments    Payment[]
   galleries   Gallery[]
   invoices    Invoice[]
@@ -424,6 +425,7 @@ model CatalogItem {
   unitPrice   Float
   vatRate     Float    @default(20)
   active      Boolean  @default(true)
+  clientOption Boolean @default(false) // proposé en option dans l'espace organisation du client
   position    Int      @default(0)
   createdAt   DateTime @default(now())
 }
@@ -684,6 +686,34 @@ model MusicPlan {
   doNotPlay     String   @default("[]")
   notes         String?
   clientCanEdit Boolean  @default(true)
+  token         String?  // lien de l'espace organisation envoyé au client
+  info          String   @default("{}") // JSON : infos pratiques (contacts, accès, horaires…)
+  deadlineDays  Int      @default(7) // modifiable par le client jusqu'à J-x
+  forceOpen     Boolean  @default(false) // rouvert par l'équipe après la date limite
+  sentAt        DateTime?
+  clientSavedAt DateTime?
   updatedBy     String?
   updatedAt     DateTime @updatedAt
+
+  @@index([token])
+}
+
+// Option demandée par le client depuis son espace organisation
+model OptionRequest {
+  id            String   @id @default(cuid())
+  dossierId     String
+  dossier       Dossier  @relation(fields: [dossierId], references: [id], onDelete: Cascade)
+  catalogItemId String?
+  label         String
+  unitPrice     Float    @default(0)
+  vatRate       Float    @default(20)
+  unit          String   @default("forfait")
+  quantity      Float    @default(1)
+  note          String?
+  status        String   @default("DEMANDE") // DEMANDE | ACCEPTEE | REFUSEE
+  quoteId       String?
+  createdAt     DateTime @default(now())
+  answeredAt    DateTime?
+
+  @@index([dossierId])
 }

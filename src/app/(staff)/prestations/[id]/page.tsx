@@ -14,9 +14,12 @@ import { EmailComposer } from "@/components/EmailComposer";
 import { EquipmentPicker } from "@/components/EquipmentPicker";
 import { equipmentAvailability } from "@/lib/equipment";
 import { paymentToken } from "@/lib/stripe";
+import QRCode from "qrcode";
 import { RentalPanel } from "@/components/RentalPanel";
 import { MusicPlanner } from "@/components/MusicPlanner";
-import { musicData } from "@/lib/musicServer";
+import { musicData, planAccess } from "@/lib/musicServer";
+import { ensurePlanToken } from "@/lib/plan";
+import { PlanShare } from "@/components/PlanShare";
 import { spotifyConfigured } from "@/lib/spotify";
 import { PrepChecklist } from "@/components/PrepChecklist";
 import { parsePrep, prepOutdated } from "@/lib/prep";
@@ -45,6 +48,7 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
         client: true, assignee: true,
         activities: { include: { user: true }, orderBy: { createdAt: "desc" }, take: 80 },
         musicPlan: true,
+        optionRequests: { orderBy: { createdAt: "asc" } },
         quotes: { orderBy: { createdAt: "desc" } },
         assignments: { include: { questionnaire: true }, orderBy: { createdAt: "desc" } },
         signatures: { select: { id: true, title: true, status: true, createdAt: true }, orderBy: { createdAt: "desc" } },
@@ -174,20 +178,27 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
           {!isGearOnly(d.eventType) && (
             <section id="musique" className="card scroll-mt-6">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-3">
-                <h2 className="font-semibold">🎵 Planning musical {d.musicPlan && !d.musicPlan.clientCanEdit && <span className="badge ml-1 bg-emerald-100 text-emerald-700">validé</span>}</h2>
-                <Link href={`/prestations/${id}/feuille-de-route`} className="text-sm text-link-600 hover:underline">🗒 Feuille de route DJ</Link>
+                <h2 className="font-semibold">🗒 Organisation et musique</h2>
+                <Link href={`/prestations/${id}/feuille-de-route`} className="text-sm text-link-600 hover:underline">Feuille de route DJ</Link>
               </div>
-              <div className="p-5">
+              <div className="space-y-5 p-5">
+                <PlanShare
+                  dossierId={id}
+                  url={`${base}/e/${await ensurePlanToken(id)}`}
+                  sentAt={d.musicPlan?.sentAt?.toISOString() ?? null}
+                  clientSavedAt={d.musicPlan?.clientSavedAt?.toISOString() ?? null}
+                  requests={d.optionRequests.map((r) => ({ id: r.id, label: r.label, quantity: r.quantity, unitPrice: r.unitPrice, note: r.note, status: r.status, quoteId: r.quoteId }))}
+                />
                 <MusicPlanner
+                  key={d.musicPlan?.updatedAt.toISOString() ?? "new"}
                   dossierId={id}
                   role="staff"
                   initial={musicData(d.musicPlan, d.eventType)}
-                  clientCanEdit={d.musicPlan?.clientCanEdit ?? true}
+                  access={planAccess(d.musicPlan, d.eventStart)}
                   spotify={spotifyConfigured()}
                   updatedBy={d.musicPlan?.updatedBy}
                   updatedAt={d.musicPlan?.updatedAt.toISOString()}
                 />
-                <p className="mt-4 text-xs text-slate-500">Le client le remplit aussi depuis son espace client (rubrique « Musique »).</p>
               </div>
             </section>
           )}
@@ -355,6 +366,7 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
               hasEquipment={d.equipment.length > 0}
               day={d.eventStart ? parisParts(d.eventStart).key : null}
               autoDays={days}
+              qr={d.prepList ? await QRCode.toDataURL(`${baseUrl()}/preparer/${id}`, { margin: 1, width: 240 }) : undefined}
             />
           )}
 

@@ -53,6 +53,7 @@ async function executeRule(rule: AutomationRule, dossierId: string, actor: Actor
         if (!tpl) continue;
         const log = await sendMail({ to: d.client.email ?? "", subject: fill(tpl.subject), text: fill(tpl.body), dossierId: d.id, clientId: d.clientId });
         done.push(`e-mail « ${tpl.name} »${log.status === "SIMULE" ? " (simulation)" : log.status === "ERREUR" ? " (échec)" : ""}`);
+        if (tpl.body.includes("lien.organisation") && log.status !== "ERREUR") await db.musicPlan.updateMany({ where: { dossierId: d.id, sentAt: null }, data: { sentAt: new Date() } });
       } else if (a.kind === "CREATE_TASK") {
         const [assigneeId] = await resolve(a.assignTo);
         const t = await db.task.create({

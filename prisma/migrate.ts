@@ -80,6 +80,23 @@ async function main() {
   });
 
   // Règle « J-3 : liste de préparation du matériel » pour les installations existantes
+  await once("seed.catalog.clientOptions.v1", async () => {
+    const n = await db.catalogItem.updateMany({ where: { active: true, category: { in: ["OPTION", "PHOTOBOOTH"] } }, data: { clientOption: true } });
+    console.log(`${n.count} option(s) du catalogue proposée(s) aux clients.`);
+  });
+
+  await once("seed.organisation.v1", async () => {
+    const tpl = async (e: { name: string; subject: string; body: string }) =>
+      (await db.emailTemplate.findFirst({ where: { name: e.name } })) ?? (await db.emailTemplate.create({ data: e }));
+    const invite = await tpl(D.ORGANISATION_EMAIL);
+    const remind = await tpl(D.ORGANISATION_REMINDER);
+    if (!(await db.automationRule.findFirst({ where: { name: "Prestation confirmée : espace organisation au client" } })))
+      await db.automationRule.create({ data: { name: "Prestation confirmée : espace organisation au client", trigger: "STATUS", toStatus: "CONFIRME", eventTypes: D.ORGANISATION_EVENT_TYPES, actions: JSON.stringify([{ kind: "SEND_EMAIL", templateId: invite.id }]) } });
+    if (!(await db.automationRule.findFirst({ where: { name: "J-10 : rappel de l'espace organisation" } })))
+      await db.automationRule.create({ data: { name: "J-10 : rappel de l'espace organisation", trigger: "EVENT_OFFSET", offsetDays: -10, onlyStatuses: "CONFIRME", eventTypes: D.ORGANISATION_EVENT_TYPES, actions: JSON.stringify([{ kind: "SEND_EMAIL", templateId: remind.id }]) } });
+    console.log("Espace organisation : modèles et automatisations créés.");
+  });
+
   await once("seed.automations.prep.v1", async () => {
     if (await db.automationRule.findFirst({ where: { name: "J-3 : liste de préparation du matériel" } })) return;
     await db.automationRule.create({

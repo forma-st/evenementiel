@@ -13,6 +13,7 @@ export async function syncPrepList(dossierId: string) {
   const list = await buildPrepList(dossierId, u.name);
   if (!had) await db.activity.create({ data: { dossierId, userId: u.id, kind: "STATUS", body: `📋 Liste de préparation du matériel créée (${list.items.length} article${list.items.length > 1 ? "s" : ""})` } });
   revalidatePath(`/prestations/${dossierId}`);
+  revalidatePath(`/preparer/${dossierId}`);
 }
 
 /** Coche ou décoche un article ; prévient quand tout est prêt. */
@@ -31,4 +32,5 @@ export async function togglePrepItem(dossierId: string, equipmentId: string, don
     await db.task.updateMany({ where: { dossierId, title: { startsWith: "Préparer le matériel" }, status: { not: "FAIT" } }, data: { status: "FAIT", completedAt: new Date() } });
   }
   revalidatePath(`/prestations/${dossierId}`);
+  revalidatePath(`/preparer/${dossierId}`);
 }

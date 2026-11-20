@@ -412,3 +412,42 @@ export function defaultRules(ids: { email: Record<string, string>; demande: stri
     },
   ];
 }
+
+/** Espace organisation : e-mail d'invitation et rappel avant la date limite. */
+export const ORGANISATION_EMAIL = {
+  name: "Organisation de votre événement",
+  subject: "Préparons ensemble votre {{prestation.type}} du {{prestation.date}}",
+  body: `Bonjour {{client.nom}},
+
+Votre {{prestation.type}} du {{prestation.date}} est confirmé, merci pour votre confiance !
+
+Pour qu'il vous ressemble, nous avons ouvert votre espace organisation :
+{{lien.organisation}}
+
+Vous y retrouvez :
+- le déroulé de la journée (horaires et morceaux des moments clés) ;
+- votre playlist Spotify partagée, les titres à passer absolument et ceux à éviter ;
+- les infos pratiques (accès, contacts le jour J, discours…) ;
+- les options que vous pouvez ajouter si vous le souhaitez.
+
+Vous pouvez le compléter et le modifier autant que vous voulez jusqu'au {{organisation.date_limite}}.
+
+À très vite,
+{{responsable}}
+{{societe.nom}}`,
+};
+export const ORGANISATION_REMINDER = {
+  name: "Rappel : organisation à compléter",
+  subject: "Plus que quelques jours pour finaliser votre {{prestation.type}}",
+  body: `Bonjour {{client.nom}},
+
+Le grand jour approche ! Pensez à vérifier votre espace organisation (déroulé, musique, infos pratiques) :
+{{lien.organisation}}
+
+Il reste modifiable jusqu'au {{organisation.date_limite}}. Ensuite, nous finalisons la feuille de route de la soirée.
+
+Belle journée,
+{{responsable}}
+{{societe.nom}}`,
+};
+export const ORGANISATION_EVENT_TYPES = "MARIAGE,ANNIVERSAIRE,ENTREPRISE,BAPTEME,GALA,SOIREE,CONCERT,AUTRE";

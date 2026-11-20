@@ -6,7 +6,7 @@ import { CATALOG_CATEGORIES } from "@/lib/presta";
 import { UNITS } from "@/lib/quotes";
 import { eur } from "@/lib/format";
 import { getCompany } from "@/lib/company";
-import { deleteCatalogItem, saveCatalogItem, toggleCatalogItem } from "./actions";
+import { deleteCatalogItem, saveCatalogItem, toggleCatalogItem, toggleClientOption } from "./actions";
 
 export const metadata = { title: "Catalogue" };
 
@@ -33,7 +33,7 @@ export default async function CatalogPage() {
   const [items, c] = await Promise.all([db.catalogItem.findMany({ orderBy: [{ position: "asc" }, { label: "asc" }] }), getCompany()]);
   return (
     <div className="space-y-6">
-      <PageHeader title="Catalogue" subtitle="Vos formules, options et tarifs : ajoutés en un clic dans les devis." />
+      <PageHeader title="Catalogue" subtitle="Vos formules, options et tarifs : ajoutés en un clic dans les devis. Les articles « 🛒 option client » sont proposés aux clients dans leur espace organisation." />
       <div className="card p-5"><h2 className="mb-3 font-semibold">Nouvel article</h2><ItemForm it={{}} vatExempt={c.vatExempt} /></div>
       {CATALOG_CATEGORIES.map((cat) => {
         const list = items.filter((i) => i.category === cat.id);
@@ -47,11 +47,12 @@ export default async function CatalogPage() {
                   <details>
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
                       <div><div className="font-medium">{i.label}</div>{i.description && <div className="text-xs text-slate-500">{i.description}</div>}</div>
-                      <div className="flex shrink-0 items-center gap-3 text-sm"><span className="font-medium tabular-nums">{eur(i.unitPrice)} HT</span><span className="text-xs text-link-600">modifier</span></div>
+                      <div className="flex shrink-0 items-center gap-3 text-sm">{i.clientOption && <span className="badge bg-brand-50 text-brand-700" title="Proposé dans l'espace organisation des clients">🛒 option client</span>}<span className="font-medium tabular-nums">{eur(i.unitPrice)} HT</span><span className="text-xs text-link-600">modifier</span></div>
                     </summary>
                     <div className="mt-3 space-y-2">
                       <ItemForm it={i} vatExempt={c.vatExempt} />
                       <div className="flex gap-3 text-xs">
+                        <form action={toggleClientOption.bind(null, i.id, !i.clientOption)}><button className="text-link-600 hover:underline">{i.clientOption ? "Ne plus proposer au client" : "🛒 Proposer au client en option"}</button></form>
                         <form action={toggleCatalogItem.bind(null, i.id, !i.active)}><button className="text-slate-500 hover:text-slate-800">{i.active ? "Masquer des devis" : "Réactiver"}</button></form>
                         <form action={deleteCatalogItem.bind(null, i.id)}><button className="text-rose-600 hover:underline">Supprimer</button></form>
                       </div>

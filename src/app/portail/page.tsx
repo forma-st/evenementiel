@@ -64,7 +64,7 @@ export default async function Portal() {
                   {d.services && <div className="flex justify-between gap-3"><dt className="text-slate-500">Prestations</dt><dd className="text-right">{servicesLabel(d.services)}</dd></div>}
                   {d.venueAddress && <div className="flex justify-between gap-3"><dt className="text-slate-500">Adresse</dt><dd className="text-right">{[d.venueAddress, d.venueCity].filter(Boolean).join(", ")}</dd></div>}
                   {d.guests && <div className="flex justify-between gap-3"><dt className="text-slate-500">Invités</dt><dd>{d.guests}</dd></div>}
-                  {!isGearOnly(d.eventType) && <div className="pt-2"><Link href={`/portail/musique/${d.id}`} className="btn-secondary">🎵 Ma musique{d.musicPlan ? "" : " : à compléter"}</Link></div>}
+                  {!isGearOnly(d.eventType) && <div className="pt-2"><Link href={`/portail/musique/${d.id}`} className="btn-secondary">🗒 Organiser mon événement</Link></div>}
                 </dl>
                 <div>
                   <div className="mb-2 text-sm font-medium">Règlements</div>

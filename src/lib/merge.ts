@@ -1,3 +1,4 @@
+import { ensurePlanToken } from "./plan";
 import { db } from "./db";
 import { getCompany } from "./company";
 import { paymentToken } from "./stripe";
@@ -8,6 +9,8 @@ import { depositOf, totals, parseLines } from "./quotes";
 /** Variables disponibles dans les contrats, e-mails et automatisations. */
 export const MERGE_VARIABLES: [string, string][] = [
   ["client.nom", "Nom du client"],
+  ["lien.organisation", "Lien de l'espace organisation (déroulé, musique, options)"],
+  ["organisation.date_limite", "Date limite de modification par le client"],
   ["client.email", "E-mail du client"],
   ["client.telephone", "Téléphone du client"],
   ["client.adresse", "Adresse complète du client"],
@@ -63,7 +66,7 @@ export async function varsForDossier(dossierId: string): Promise<MergeVars> {
   const d = await db.dossier.findUniqueOrThrow({
     where: { id: dossierId },
     include: {
-      client: true, assignee: true,
+      client: true, assignee: true, musicPlan: { select: { deadlineDays: true } },
       quotes: { orderBy: { createdAt: "desc" } },
       galleries: { where: { status: "PUBLIEE" }, orderBy: { publishedAt: "desc" }, take: 1 },
       payments: { where: { paidAt: null, amount: { gt: 0 } }, orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }], take: 1 },
@@ -114,6 +117,8 @@ export async function varsForDossier(dossierId: string): Promise<MergeVars> {
     "societe.site": c.web,
     "societe.iban": c.iban,
     "lien.portail": `${url}/portail`,
+    "lien.organisation": `${url}/e/${await ensurePlanToken(d.id)}`,
+    "organisation.date_limite": d.eventStart ? longDateYear(new Date(d.eventStart.getTime() - (d.musicPlan?.deadlineDays ?? 7) * 864e5)) : "",
     "lien.devis": q?.token ? `${url}/d/${q.token}` : `${url}/portail`,
     "lien.galerie": g ? `${url}/g/${g.token}` : "",
     "lien.galerie_code": g?.password ?? "",

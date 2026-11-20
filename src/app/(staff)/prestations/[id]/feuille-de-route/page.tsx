@@ -50,12 +50,21 @@ export default async function RunSheet({ params }: { params: Promise<{ id: strin
           {d.guests && <Row label="Invités">{d.guests}</Row>}
           {d.services && <Row label="Prestations">{servicesLabel(d.services)}</Row>}
           {d.assignee && <Row label="DJ">{d.assignee.name}{d.assignee.phone ? ` · ${d.assignee.phone}` : ""}</Row>}
+          {m.info.arrival && <Row label="Accès salle">{m.info.arrival}</Row>}
+          {m.info.access && <Row label="Accès">{m.info.access}</Row>}
+          {m.info.parking && <Row label="Stationnement">{m.info.parking}</Row>}
+          {m.info.power && <Row label="Électricité">{m.info.power}</Row>}
+          {m.info.guests && <Row label="Invités (client)">{m.info.guests}</Row>}
+          {m.info.kids && <Row label="Enfants">{m.info.kids}</Row>}
+          {m.info.micro && <Row label="Discours / micro">{m.info.micro}</Row>}
+          {m.info.meal && <Row label="Repas équipe">{m.info.meal}</Row>}
         </dl>
         <dl className="text-sm">
           <h2 className="mb-2 font-semibold">Client</h2>
           <Row label="Nom">{d.client.name}</Row>
           {d.client.phone && <Row label="Téléphone">{d.client.phone}</Row>}
           {d.client.email && <Row label="E-mail">{d.client.email}</Row>}
+          {m.info.contacts.map((c) => <Row key={c.id} label={c.role || "Contact"}>{c.name}{c.phone && <> · <a href={`tel:${c.phone.replace(/\s/g, "")}`} className="text-link-600">{c.phone}</a></>}</Row>)}
           {m.playlistUrl && <Row label="Playlist"><a href={m.playlistUrl} className="break-all text-link-600">{m.playlistUrl}</a></Row>}
         </dl>
       </section>
@@ -86,8 +95,9 @@ export default async function RunSheet({ params }: { params: Promise<{ id: strin
         </section>
       </div>
 
-      {(m.notes || d.description) && (
+      {(m.notes || d.description || m.info.other) && (
         <section className="card space-y-3 p-6 text-sm print:break-inside-avoid print:border print:shadow-none">
+          {m.info.other && <div><h2 className="mb-1 font-semibold">Infos du client</h2><p className="whitespace-pre-wrap">{m.info.other}</p></div>}
           {m.notes && <div><h2 className="mb-1 font-semibold">Ambiance et consignes</h2><p className="whitespace-pre-wrap">{m.notes}</p></div>}
           {d.description && <div><h2 className="mb-1 font-semibold">Notes internes</h2><p className="whitespace-pre-wrap text-slate-600">{d.description}</p></div>}
         </section>
