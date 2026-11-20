@@ -93,7 +93,7 @@ export function Sidebar({ user, mail, badges: initial, show }: {
       {/* ordinateur et tablette : rail flottant */}
       <aside className={`nav-navy nav-rail sticky top-3 z-30 m-3 mr-0 hidden h-[calc(100vh-1.5rem)] shrink-0 flex-col rounded-[28px] py-4 shadow-[0_20px_50px_-20px_rgba(11,22,48,.7)] transition-[width] duration-200 print:hidden md:flex ${wide ? "w-60" : "w-[76px]"}`}>
         <div className={`flex items-center ${wide ? "justify-between px-4" : "justify-center"}`}>
-          {wide ? <Logo className="h-9" /> : <Link href="/" aria-label="Tableau de bord" className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff] text-[#1d55c0] shadow-lg"><Icon name="music" className="h-5 w-5" /></Link>}
+          {wide ? <Logo className="h-9" /> : <Link href="/" aria-label="Tableau de bord" className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-[#fff] p-1 shadow-lg">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/api/logo?mark=1" alt="Logo" className="h-full w-full object-contain" /></Link>}
           {wide && <button onClick={toggle} aria-label="Réduire le menu" className="rounded-lg p-1.5 text-[rgba(255,255,255,.70)] hover:bg-[rgba(255,255,255,.10)] hover:text-[#fff]"><Icon name="chevronLeft" className="h-4 w-4" /></button>}
         </div>
         <nav className={`mt-5 flex flex-1 flex-col gap-1 overflow-y-auto ${wide ? "px-3" : "items-center px-2"} pb-6 [scrollbar-width:none] [mask-image:linear-gradient(to_bottom,#000_calc(100%-28px),transparent)]`}>
