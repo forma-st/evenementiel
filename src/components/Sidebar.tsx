@@ -8,6 +8,14 @@ import { ThemeSwitch } from "@/components/ThemeSwitch";
 
 export type Badges = { lateTasks: number; unreadMessages: number; unreadNotifs: number };
 
+/** Emoji de chaque rubrique (plus parlant que des pictogrammes au trait). */
+const EMOJI: Record<string, string> = {
+  "/": "🏠", "/notifications": "🔔", "/messages": "💬", "/prestations": "🎉", "/agenda": "📅", "/clients": "👥",
+  "/emails": "✉️", "/taches": "✅", "/devis": "📝", "/factures": "🧾", "/catalogue": "📚", "/comptabilite": "📊",
+  "/contrats": "📜", "/signatures": "✍️", "/galeries": "📸", "/materiel": "🔊", "/preparer": "📋", "/questionnaires": "🗳️", "/parametres": "⚙️",
+};
+const Emo = ({ href, big = false }: { href: string; big?: boolean }) => <span aria-hidden className={`shrink-0 leading-none ${big ? "text-[21px]" : "text-base"}`}>{EMOJI[href] ?? "•"}</span>;
+
 type Item = { href: string; label: string; icon: string; badge?: keyof Badges; badgeColor?: string };
 
 export function Sidebar({ user, mail, badges: initial, show }: {
@@ -56,7 +64,7 @@ export function Sidebar({ user, mail, badges: initial, show }: {
   const [wide, setWide] = useState(false);
   const [tip, setTip] = useState<{ label: string; top: number } | null>(null);
   useEffect(() => { try { setWide(localStorage.getItem("nav") === "full"); } catch {} }, []);
-  const toggle = () => setWide((w) => { try { localStorage.setItem("nav", w ? "rail" : "full"); } catch {} return !w; });
+  const toggle = () => { setTip(null); return setWide((w) => { try { localStorage.setItem("nav", w ? "rail" : "full"); } catch {} return !w; }); };
   const initials = user.name.split(/\s+/).map((x) => x[0]).slice(0, 2).join("").toUpperCase();
   const hint = (label: string) => ({
     onMouseEnter: (e: React.MouseEvent<HTMLElement>) => { if (!wide) { const r = e.currentTarget.getBoundingClientRect(); setTip({ label, top: r.top + r.height / 2 }); } },
@@ -73,7 +81,7 @@ export function Sidebar({ user, mail, badges: initial, show }: {
             const n = i.badge ? badges[i.badge] : 0;
             return (
               <Link key={i.href} href={i.href} className={`relative flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm whitespace-nowrap ${active(i.href) ? "bg-[rgba(255,255,255,.20)] font-medium text-white" : "text-[rgba(255,255,255,.75)]"}`}>
-                <Icon name={i.icon} className="h-4 w-4" />{i.label}
+                <Emo href={i.href} />{i.label}
                 {n > 0 && <span className="rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold text-white">{n > 99 ? "99+" : n}</span>}
               </Link>
             );
@@ -93,8 +101,8 @@ export function Sidebar({ user, mail, badges: initial, show }: {
             const on = active(i.href);
             return (
               <Link key={i.href} href={i.href} aria-label={i.label} {...hint(i.label)}
-                className={`relative flex shrink-0 items-center gap-3 rounded-2xl text-sm transition ${wide ? "px-3 py-2" : "h-10 w-10 justify-center"} ${on ? "nav-on font-medium text-white" : "text-[rgba(255,255,255,.70)] hover:bg-[rgba(255,255,255,.10)] hover:text-[#fff]"}`}>
-                <Icon name={i.icon} className="h-[19px] w-[19px] shrink-0" />
+                className={`relative flex shrink-0 items-center gap-3 rounded-2xl text-sm transition ${wide ? "px-3 py-2" : "h-10 w-10 justify-center"} ${on ? "nav-on font-medium text-white" : `text-[rgba(255,255,255,.80)] hover:bg-[rgba(255,255,255,.16)] hover:text-[#fff] ${wide ? "" : "bg-[rgba(255,255,255,.07)]"}`}`}>
+                <Emo href={i.href} big={!wide} />
                 {wide && <span className="truncate">{i.label}</span>}
                 {n > 0 && <span className={`rounded-full bg-rose-500 px-1.5 text-[10px] leading-4 font-semibold text-white ${wide ? "ml-auto" : "absolute -top-0.5 -right-0.5"}`}>{n > 99 ? "99+" : n}</span>}
               </Link>
