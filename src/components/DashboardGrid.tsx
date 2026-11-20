@@ -9,7 +9,7 @@ type Catalog = { id: WidgetId; title: string; help: string; size: WidgetSize }[]
 export function DashboardGrid({ initial, catalog, contents }: {
   initial: LayoutItem[];
   catalog: Catalog;
-  contents: Partial<Record<WidgetId, { body: React.ReactNode; action?: React.ReactNode }>>;
+  contents: Partial<Record<WidgetId, { body: React.ReactNode; action?: React.ReactNode; bare?: boolean }>>;
 }) {
   const router = useRouter();
   const [layout, setLayout] = useState(initial);
@@ -73,9 +73,10 @@ export function DashboardGrid({ initial, catalog, contents }: {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+      <div className="grid grid-flow-row-dense grid-cols-1 gap-6 md:grid-cols-12">
         {layout.map((w) => {
           const c = contents[w.id];
+          if (c?.bare && !editing) return <div key={w.id} className={`min-w-0 ${SPAN[w.size]}`}>{c.body}</div>;
           return (
             <section
               key={w.id}

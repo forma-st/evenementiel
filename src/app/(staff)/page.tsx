@@ -3,13 +3,16 @@ import { db } from "@/lib/db";
 import { requireStaff } from "@/lib/auth";
 import { clientWhere, permsFor } from "@/lib/permissions";
 import { PERIODS, dashboardStats, teamTable, type PeriodId } from "@/lib/stats";
-import { date, time } from "@/lib/format";
+import { date, parisParts, time } from "@/lib/format";
 import { addDays, isOverdue, startOfDay, taskPriority, taskType } from "@/lib/tasks";
 import { eventType } from "@/lib/events";
 import { eventKind } from "@/lib/presta";
 import { parsePrep } from "@/lib/prep";
 import { SIGNATURE_STATUSES } from "@/lib/signature";
 import { gearTracking } from "@/lib/gearTracking";
+import { calendarItems, highlightData } from "@/lib/dashboardExtra";
+import { HighlightTiles } from "@/components/HighlightTiles";
+import { MiniCalendar } from "@/components/MiniCalendar";
 import { GearTrackingWidget } from "@/components/GearTracking";
 import { WIDGETS, WIDGET_IDS, allowed, readLayout, type WidgetId } from "@/lib/widgets";
 import { conversationsFor } from "@/lib/chat";
@@ -43,6 +46,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const needStats = ["kpis", "revenue", "pipeline", "tasksChart"].some((w) => on.has(w as WidgetId));
 
   const gearP = on.has("gear") ? gearTracking(14) : null;
+  const hlP = on.has("highlights") ? highlightData(memberId) : null;
+  const calP = on.has("calendar") ? calendarItems(memberId, user.id) : null;
   const [stats, members, myTasks, myEvents, recent, rows, signatures, answers, convs, upcoming, pays] = await Promise.all([
     needStats ? dashboardStats(memberId, period) : null,
     team ? db.user.findMany({ where: { role: { not: "CLIENT" }, active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }) : null,
@@ -61,7 +66,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     : [];
   const who = memberId ? (memberId === user.id ? "vos chiffres" : `chiffres de ${members?.find((m) => m.id === memberId)?.name ?? "ce membre"}`) : "chiffres de toute l'équipe";
 
-  const contents: Partial<Record<WidgetId, { body: React.ReactNode; action?: React.ReactNode }>> = {};
+  const contents: Partial<Record<WidgetId, { body: React.ReactNode; action?: React.ReactNode; bare?: boolean }>> = {};
 
   if (stats && on.has("kpis")) {
     const k = stats.kpi;
@@ -86,6 +91,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       ),
     };
   }
+  const [hl, cal] = await Promise.all([hlP, calP]);
+  if (hl) contents.highlights = { bare: true, body: <HighlightTiles {...hl} /> };
+  if (cal) contents.calendar = { body: <MiniCalendar items={cal} today={parisParts(new Date()).key} /> };
   const gear = gearP ? await gearP : null;
   if (gear) {
     contents.gear = {

@@ -14,7 +14,7 @@ const ICONS: Record<Mode, React.ReactNode> = {
 };
 const LABELS: Record<Mode, string> = { light: "Clair", dark: "Sombre", system: "Système" };
 
-export function ThemeSwitch({ compact = false, full = false }: { compact?: boolean; full?: boolean }) {
+export function ThemeSwitch({ compact = false, full = false, vertical = false, cycle = false }: { compact?: boolean; full?: boolean; vertical?: boolean; cycle?: boolean }) {
   const [mode, setMode] = useState<Mode>("system");
   useEffect(() => {
     const t = document.documentElement.dataset.theme as Mode | undefined;
@@ -25,8 +25,12 @@ export function ThemeSwitch({ compact = false, full = false }: { compact?: boole
     document.documentElement.dataset.theme = m;
     try { localStorage.setItem(KEY, m); } catch {}
   };
+  if (cycle) {
+    const next: Record<Mode, Mode> = { light: "dark", dark: "system", system: "light" };
+    return <button type="button" onClick={() => choose(next[mode])} aria-label={`Apparence : ${LABELS[mode]} (cliquer pour changer)`} title={`Apparence : ${LABELS[mode]}`} className="flex h-9 w-9 items-center justify-center rounded-xl text-[rgba(255,255,255,.7)] hover:bg-[rgba(255,255,255,.1)] hover:text-[#fff] [&_svg]:h-4 [&_svg]:w-4">{ICONS[mode]}</button>;
+  }
   return (
-    <div role="radiogroup" aria-label="Apparence" className={`${full ? "grid w-full grid-cols-3" : "inline-flex"} rounded-full border border-slate-200 bg-slate-100/70 p-0.5`}>
+    <div role="radiogroup" aria-label="Apparence" className={`${full ? "grid w-full grid-cols-3" : vertical ? "inline-flex flex-col" : "inline-flex"} rounded-full border border-slate-200 bg-slate-100/70 p-0.5`}>
       {(["light", "dark", "system"] as Mode[]).map((m) => (
         <button
           key={m}
