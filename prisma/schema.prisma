@@ -512,7 +512,16 @@ model Payment {
 model Equipment {
   id        String   @id @default(cuid())
   name      String
+  brand     String?  // marque (et modèle)
   category  String   @default("SONO") // SONO | LUMIERE | DJ | PHOTO | VIDEO | STRUCTURE | AUTRE
+  // proposition automatique : prestations cochées qui l'utilisent, types d'événement (vide = tous),
+  // quantité de base, +1 par tranche de N invités, plafond
+  autoServices  String @default("")
+  autoTypes     String @default("")
+  autoBase      Int    @default(0)
+  autoPerGuests Int?
+  autoMax       Int?
+  autoKeywords  String @default("") // mots des lignes de devis qui déclenchent la proposition (ex. « fumée »)
   quantity  Int      @default(1)
   outOfService Int   @default(0) // unités en réparation / indisponibles
   dailyRate    Float?  // tarif de location à la journée (HT)

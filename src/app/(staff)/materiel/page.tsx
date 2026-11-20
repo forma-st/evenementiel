@@ -29,7 +29,7 @@ export default async function EquipmentPage({ searchParams }: { searchParams: Pr
     },
   }), gearTracking(14)]);
   const data: BoardItem[] = items.map((i) => ({
-    id: i.id, name: i.name, category: i.category, quantity: i.quantity, outOfService: i.outOfService, notes: i.notes, dailyRate: i.dailyRate, replacementValue: i.replacementValue,
+    id: i.id, name: i.name, brand: i.brand, auto: { services: i.autoServices, types: i.autoTypes, base: i.autoBase, perGuests: i.autoPerGuests, max: i.autoMax, keywords: i.autoKeywords }, category: i.category, quantity: i.quantity, outOfService: i.outOfService, notes: i.notes, dailyRate: i.dailyRate, replacementValue: i.replacementValue,
     bookings: i.bookings
       .map((b) => ({
         dossierId: b.dossier.id, reference: b.dossier.reference, title: b.dossier.title, status: b.dossier.status, icon: eventKind(b.dossier.eventType).icon,

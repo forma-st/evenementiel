@@ -1,7 +1,7 @@
 /** Location de matériel sans technicien : durée, états des lieux. */
 export type CheckoutItem = { id: string; name: string; qty: number; ok: boolean };
 export type CheckinItem = { id: string; name: string; qty: number; returned: number; damaged: number; note: string };
-export type Checkout = { at: string; by: string; items: CheckoutItem[]; notes: string };
+export type Checkout = { at: string; by: string; items: CheckoutItem[]; notes: string; signature?: { name: string; png: string; at: string } };
 export type Checkin = { at: string; by: string; items: CheckinItem[]; notes: string; damages: number };
 
 /** Nombre de jours facturés (24 h entamées, 1 jour minimum). */

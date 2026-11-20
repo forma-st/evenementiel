@@ -451,3 +451,52 @@ Belle journée,
 {{societe.nom}}`,
 };
 export const ORGANISATION_EVENT_TYPES = "MARIAGE,ANNIVERSAIRE,ENTREPRISE,BAPTEME,GALA,SOIREE,CONCERT,AUTRE";
+
+/** Règles de proposition automatique pour le parc de départ (repérées par un mot du nom). */
+export const DEFAULT_GEAR_RULES: { match: string; services: string; types?: string; base: number; perGuests?: number; max?: number; keywords?: string }[] = [
+  { match: "enceinte active", services: "DJ,SONO", base: 2, perGuests: 60, max: 4 },
+  { match: "caisson", services: "DJ,SONO", base: 1, perGuests: 100, max: 2 },
+  { match: "batterie", services: "", base: 1, keywords: "cérémonie, mairie, vin d'honneur" },
+  { match: "micro", services: "DJ,SONO,ANIMATION", base: 1, perGuests: 100, max: 3, keywords: "micro, discours, cérémonie, mairie" },
+  { match: "contrôleur", services: "DJ", base: 1, max: 1 },
+  { match: "ordinateur", services: "DJ", base: 1, max: 1 },
+  { match: "par 64", services: "LUMIERE", base: 4, perGuests: 30, max: 12 },
+  { match: "lyre", services: "LUMIERE", base: 2, perGuests: 100, max: 4 },
+  { match: "fumée", services: "", base: 1, keywords: "fumée, première danse, ouverture de bal" },
+  { match: "boîtier photo", services: "PHOTO", base: 1, perGuests: 150, max: 2 },
+  { match: "photobooth", services: "PHOTOBOOTH", base: 1, max: 1, keywords: "photobooth" },
+  { match: "façade", services: "DJ", base: 1, max: 1 },
+];
+
+/**
+ * Formules par type et nombre d'invités, au bas de la fourchette du marché (prestataires indépendants, province, 2026).
+ * Sources : noxio.fr, eventsuite.fr, tarif-dj-mariage.fr, linkaband.com, bl-evenementiel.com, shootnbox.fr, fotelya.com.
+ */
+export const CATALOG_2026 = [
+  { category: "PACK", label: "Mariage — jusqu'à 50 invités", description: "DJ du vin d'honneur à la fin de soirée, sonorisation et lumières dansantes adaptées, micro sans fil, rendez-vous de préparation.", unit: "forfait", unitPrice: 700 },
+  { category: "PACK", label: "Mariage — 50 à 100 invités", description: "DJ du vin d'honneur à la fin de soirée, sonorisation et lumières dansantes adaptées, micro sans fil, rendez-vous de préparation.", unit: "forfait", unitPrice: 950 },
+  { category: "PACK", label: "Mariage — 100 à 150 invités", description: "DJ du vin d'honneur à la fin de soirée, sonorisation renforcée (caissons), lumières dansantes, 2 micros sans fil, rendez-vous de préparation.", unit: "forfait", unitPrice: 1200 },
+  { category: "PACK", label: "Mariage — 150 à 200 invités", description: "DJ du vin d'honneur à la fin de soirée, sonorisation grande salle, éclairage dancefloor, 2 micros sans fil, rendez-vous de préparation.", unit: "forfait", unitPrice: 1500 },
+  { category: "PACK", label: "Mariage — plus de 200 invités", description: "DJ, sonorisation grande capacité, éclairage dancefloor et architectural, micros sans fil, repérage du lieu.", unit: "forfait", unitPrice: 1900 },
+  { category: "PACK", label: "Soirée d'entreprise — jusqu'à 50 personnes", description: "DJ 4 h, sonorisation, lumières d'ambiance, micro pour les discours.", unit: "forfait", unitPrice: 650 },
+  { category: "PACK", label: "Soirée d'entreprise — 50 à 150 personnes", description: "DJ 5 h, sonorisation, lumières dansantes, micro sans fil pour les discours et remises de prix.", unit: "forfait", unitPrice: 900 },
+  { category: "PACK", label: "Soirée d'entreprise — 150 à 300 personnes", description: "DJ 5 h, sonorisation grande salle, éclairage scénique, 2 micros sans fil, régie discours.", unit: "forfait", unitPrice: 1400 },
+  { category: "PACK", label: "Anniversaire / soirée privée — jusqu'à 80 invités", description: "DJ 4 à 5 h, sonorisation et lumières dansantes, micro.", unit: "forfait", unitPrice: 450 },
+  { category: "PACK", label: "Anniversaire / soirée privée — 80 à 150 invités", description: "DJ 5 h, sonorisation renforcée, lumières dansantes, micro sans fil.", unit: "forfait", unitPrice: 650 },
+  { category: "SONO", label: "Cérémonie civile en mairie — sonorisation", description: "Enceinte autonome, micro sans fil, musiques d'entrée et de sortie des mariés.", unit: "forfait", unitPrice: 150 },
+  { category: "SONO", label: "Cérémonie laïque — sonorisation", description: "Enceintes, 2 micros sans fil pour les officiants, lecture des musiques.", unit: "forfait", unitPrice: 150 },
+  { category: "SONO", label: "Vin d'honneur — ambiance musicale", description: "Enceinte et playlist d'ambiance sur un second espace.", unit: "forfait", unitPrice: 100 },
+  { category: "PACK", label: "Pack cérémonie (mairie ou laïque) + vin d'honneur", unit: "forfait", unitPrice: 250 },
+  { category: "DJ", label: "Heure supplémentaire DJ (fin de soirée)", unit: "hour", unitPrice: 80 },
+  { category: "LUMIERE", label: "Éclairage dancefloor / architectural", description: "Projecteurs LED d'ambiance sur les murs et la piste.", unit: "forfait", unitPrice: 150 },
+  { category: "LUMIERE", label: "Fumée lourde pour l'ouverture de bal", unit: "forfait", unitPrice: 150 },
+  { category: "SONO", label: "Micro sans fil supplémentaire", unit: "piece", unitPrice: 40 },
+  { category: "PHOTOBOOTH", label: "Photobooth — soirée, impressions illimitées", unit: "forfait", unitPrice: 400 },
+  { category: "PHOTO", label: "Photographe — soirée (3 à 4 h)", unit: "forfait", unitPrice: 450 },
+  { category: "PHOTO", label: "Photographe mariage — demi-journée", unit: "forfait", unitPrice: 700 },
+  { category: "PHOTO", label: "Photographe mariage — journée", unit: "forfait", unitPrice: 1200 },
+  { category: "VIDEO", label: "Vidéaste mariage — film de la journée", unit: "forfait", unitPrice: 1300 },
+  { category: "SONO", label: "Location sono seule 24 h — jusqu'à 100 personnes", unit: "day", unitPrice: 90 },
+  { category: "SONO", label: "Location sono seule 24 h — 100 à 300 personnes", unit: "day", unitPrice: 190 },
+  { category: "DEPLACEMENT", label: "Déplacement au-delà de 50 km", unit: "km", unitPrice: 0.5 },
+];

@@ -2,12 +2,46 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { Fold } from "./Fold";
+import { EVENT_KINDS, SERVICES } from "@/lib/presta";
+
+type Auto = BoardItem["auto"];
+const autoLabel = (a: Auto) => {
+  if (!a.services && !a.keywords) return "";
+  if (!a.services) return `proposé si le devis mentionne « ${a.keywords.split(",")[0].trim()} »`;
+  const sv = a.services.split(",").map((x) => SERVICES.find((s) => s.id === x)?.label ?? x).join(" / ");
+  return `proposé avec ${sv} : ${a.base}${a.perGuests ? ` + 1 par ${a.perGuests} invités` : ""}${a.max ? ` (max ${a.max})` : ""}`;
+};
+
+/** Règle de proposition automatique d'un matériel. */
+function AutoRule({ a }: { a: Auto }) {
+  const sv = a.services.split(",").filter(Boolean), ty = a.types.split(",").filter(Boolean);
+  return (
+    <fieldset className="space-y-3 rounded-xl bg-brand-50/50 p-3 ring-1 ring-brand-100 sm:col-span-6">
+      <legend className="px-1 text-sm font-medium">✨ Proposition automatique sur les prestations</legend>
+      <div>
+        <span className="text-xs text-slate-600">Proposé quand la prestation comprend :</span>
+        <div className="mt-1 flex flex-wrap gap-1.5">{SERVICES.map((s) => <label key={s.id} className="flex cursor-pointer items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs ring-1 ring-slate-200 has-[:checked]:bg-brand-600 has-[:checked]:text-white has-[:checked]:ring-brand-600"><input type="checkbox" name="autoServices" value={s.id} defaultChecked={sv.includes(s.id)} className="sr-only" />{s.icon} {s.label}</label>)}</div>
+      </div>
+      <div>
+        <span className="text-xs text-slate-600">Seulement pour ces types (aucun = tous) :</span>
+        <div className="mt-1 flex flex-wrap gap-1.5">{EVENT_KINDS.filter((k) => k.id !== "PRET" && k.id !== "LOCATION").map((k) => <label key={k.id} className="flex cursor-pointer items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs ring-1 ring-slate-200 has-[:checked]:bg-ink has-[:checked]:text-paper"><input type="checkbox" name="autoTypes" value={k.id} defaultChecked={ty.includes(k.id)} className="sr-only" />{k.icon} {k.label}</label>)}</div>
+      </div>
+      <label className="block"><span className="label">Ou quand le devis contient (mots séparés par des virgules)</span><input name="autoKeywords" defaultValue={a.keywords} placeholder="fumée, première danse" className="input" /></label>
+      <div className="grid gap-2 sm:grid-cols-3">
+        <label className="block"><span className="label">Quantité de base</span><input name="autoBase" type="number" min={0} defaultValue={a.base} className="input" /></label>
+        <label className="block"><span className="label">+ 1 tous les … invités</span><input name="autoPerGuests" type="number" min={1} defaultValue={a.perGuests ?? ""} placeholder="ex. 60" className="input" /></label>
+        <label className="block"><span className="label">Au maximum</span><input name="autoMax" type="number" min={0} defaultValue={a.max ?? ""} placeholder="stock" className="input" /></label>
+      </div>
+      <p className="text-xs text-slate-500">Ex. enceinte : DJ + Sono, base 2, + 1 tous les 60 invités → 2 pour 50 personnes, 3 pour 100, 4 pour 150.</p>
+    </fieldset>
+  );
+}
 
 export type BoardBooking = {
   dossierId: string; reference: string; title: string; status: string; icon: string;
   start: string; end: string; city: string | null; venue: string | null; client: string; quantity: number;
 };
-export type BoardItem = { id: string; name: string; category: string; quantity: number; outOfService: number; notes: string | null; dailyRate: number | null; replacementValue: number | null; bookings: BoardBooking[] };
+export type BoardItem = { id: string; name: string; brand: string | null; auto: { services: string; types: string; base: number; perGuests: number | null; max: number | null; keywords: string }; category: string; quantity: number; outOfService: number; notes: string | null; dailyRate: number | null; replacementValue: number | null; bookings: BoardBooking[] };
 type Cat = { id: string; label: string; icon: string };
 
 const MARGIN = 8 * 36e5;
@@ -118,8 +152,9 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove, top }
       </div>
 
       {adding && (
-        <form ref={addRef} key={addCat} action={async (f) => { await save(null, f); setAdding(false); }} className="card grid scroll-mt-24 gap-3 p-5 ring-2 ring-brand-200 sm:grid-cols-[1fr_180px_100px_1fr_auto] sm:items-end">
+        <form ref={addRef} key={addCat} action={async (f) => { await save(null, f); setAdding(false); }} className="card grid scroll-mt-24 gap-3 p-5 ring-2 ring-brand-200 sm:grid-cols-[1fr_160px_160px_90px_1fr_auto] sm:items-end">
           <label className="block"><span className="label">Désignation</span><input name="name" required autoFocus placeholder="Enceinte 15 pouces 1200 W" className="input" /></label>
+          <label className="block"><span className="label">Marque / modèle</span><input name="brand" placeholder="Yamaha DXR15" className="input" /></label>
           <label className="block"><span className="label">Catégorie</span><select name="category" defaultValue={addCat || cat || "SONO"} className="input">{cats.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
           <label className="block"><span className="label">Quantité</span><input name="quantity" type="number" min={0} defaultValue={1} className="input" /></label>
           <label className="block"><span className="label">Notes</span><input name="notes" placeholder="N° de série, état, emplacement…" className="input" /></label>
@@ -312,7 +347,7 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove, top }
                     <li key={i.id} className={over ? "bg-rose-50/50" : ""}>
                       <div className="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.6fr)_auto] md:items-center">
                         <div className="min-w-0">
-                          <div className="font-medium">{i.name}</div>
+                          <div className="font-medium">{i.name}{i.brand && <span className="ml-1.5 text-xs font-normal text-slate-500">{i.brand}</span>}</div>{autoLabel(i.auto) && <div className="text-[11px] text-brand-700">✨ {autoLabel(i.auto)}</div>}
                           <div className="truncate text-xs text-slate-500">{i.notes || " "}</div>
                         </div>
                         {/* jauge : utilisé au pic / libre / en réparation */}
@@ -340,15 +375,17 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove, top }
                         <button onClick={() => setEditing(editing === i.id ? null : i.id)} aria-expanded={editing === i.id} className="justify-self-start text-sm text-link-600 hover:underline md:justify-self-end">{editing === i.id ? "Fermer" : "Modifier"}</button>
                       </div>
                       {editing === i.id && (
-                        <form action={async (f) => { await save(i.id, f); setEditing(null); }} className="grid gap-3 border-t border-slate-100 bg-slate-50/60 px-5 py-4 sm:grid-cols-[1fr_170px_90px_110px_1fr] sm:items-end">
+                        <form action={async (f) => { await save(i.id, f); setEditing(null); }} className="grid gap-3 border-t border-slate-100 bg-slate-50/60 px-5 py-4 sm:grid-cols-[1fr_1fr_170px_90px_110px_1fr] sm:items-end">
                           <label className="block"><span className="label">Désignation</span><input name="name" defaultValue={i.name} className="input" /></label>
+                          <label className="block"><span className="label">Marque / modèle</span><input name="brand" defaultValue={i.brand ?? ""} placeholder="Yamaha DXR15" className="input" /></label>
                           <label className="block"><span className="label">Catégorie</span><select name="category" defaultValue={i.category} className="input">{cats.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}</select></label>
                           <label className="block"><span className="label">Quantité</span><input name="quantity" type="number" min={0} defaultValue={i.quantity} className="input" /></label>
                           <label className="block"><span className="label">En réparation</span><input name="outOfService" type="number" min={0} max={i.quantity} defaultValue={i.outOfService} className="input" /></label>
                           <label className="block"><span className="label">Notes</span><input name="notes" defaultValue={i.notes ?? ""} className="input" /></label>
                           <label className="block"><span className="label">Location / jour (€ HT)</span><input name="dailyRate" inputMode="decimal" defaultValue={i.dailyRate ?? ""} placeholder="Ex. 60" className="input" /></label>
-                          <label className="block"><span className="label">Valeur de remplacement (€)</span><input name="replacementValue" inputMode="decimal" defaultValue={i.replacementValue ?? ""} placeholder="Ex. 900" className="input" /></label>
-                          <div className="flex items-center gap-3 sm:col-span-5">
+                          <label className="block sm:col-span-2"><span className="label">Valeur de remplacement (€)</span><input name="replacementValue" inputMode="decimal" defaultValue={i.replacementValue ?? ""} placeholder="Ex. 900" className="input" /></label>
+                          <AutoRule a={i.auto} />
+                          <div className="flex items-center gap-3 sm:col-span-6">
                             <button className="btn-primary">Enregistrer</button>
                             <button type="button" onClick={() => setEditing(null)} className="btn-secondary">Annuler</button>
                             <button type="button" onClick={() => confirm(`Supprimer « ${i.name} » du parc ? Ses réservations seront retirées des prestations.`) && remove(i.id)} className="ml-auto text-sm text-rose-600 hover:underline">Supprimer du parc</button>

@@ -71,6 +71,7 @@ export function QuickLoanForm({ recent, team, others }: { recent: Who[]; team: W
 
       <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-slate-200 bg-white/90 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="handNow" defaultChecked className="h-4 w-4 accent-brand-600" /> Le matériel part maintenant</label>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="signNow" defaultChecked className="h-4 w-4 accent-brand-600" /> Faire signer le bon de sortie</label>
         <button className="btn-primary ml-auto px-6" disabled={pending || !who}>{pending ? "Enregistrement…" : "🤝 Valider la sortie"}</button>
         {state?.error && <p role="alert" className="w-full text-sm font-medium text-rose-700">⛔ {state.error}</p>}
       </div>

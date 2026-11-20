@@ -20,6 +20,7 @@ import { MusicPlanner } from "@/components/MusicPlanner";
 import { musicData, planAccess } from "@/lib/musicServer";
 import { ensurePlanToken } from "@/lib/plan";
 import { PlanShare } from "@/components/PlanShare";
+import { GearSuggest } from "@/components/GearSuggest";
 import { spotifyConfigured } from "@/lib/spotify";
 import { PrepChecklist } from "@/components/PrepChecklist";
 import { parsePrep, prepOutdated } from "@/lib/prep";
@@ -371,6 +372,7 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
           )}
 
           <div id="materiel" className="scroll-mt-6"><Card title="Matériel réservé">
+            {!isGearOnly(d.eventType) && <div className="mb-3"><GearSuggest dossierId={id} highlight={d.equipment.length === 0} /></div>}
             {equipment.length > 0 ? (
               <EquipmentPicker items={availability} action={setDossierEquipment.bind(null, id)} remove={removeDossierEquipment.bind(null, id)} dated={!!d.eventStart} />
             ) : <p className="text-sm text-slate-500"><Link href="/materiel" className="text-link-600">Ajoutez votre parc matériel</Link>.</p>}

@@ -97,6 +97,28 @@ async function main() {
     console.log("Espace organisation : modèles et automatisations créés.");
   });
 
+  await once("seed.gear.rules.v1", async () => {
+    const items = await db.equipment.findMany({ where: { autoServices: "", autoKeywords: "" } });
+    let n = 0;
+    for (const e of items) {
+      const r = D.DEFAULT_GEAR_RULES.find((x) => e.name.toLowerCase().includes(x.match));
+      if (!r) continue;
+      await db.equipment.update({ where: { id: e.id }, data: { autoServices: r.services, autoTypes: r.types ?? "", autoBase: r.base, autoPerGuests: r.perGuests ?? null, autoMax: r.max ?? null, autoKeywords: r.keywords ?? "" } });
+      n++;
+    }
+    console.log(`${n} matériel(s) avec proposition automatique.`);
+  });
+
+  await once("seed.catalog.2026.v1", async () => {
+    let pos = await db.catalogItem.count(), n = 0;
+    for (const c of D.CATALOG_2026) {
+      if (await db.catalogItem.findFirst({ where: { label: c.label } })) continue;
+      await db.catalogItem.create({ data: { ...c, position: pos++, clientOption: ["OPTION", "PHOTOBOOTH", "LUMIERE"].includes(c.category) || c.label.startsWith("Heure supplémentaire") || c.label.startsWith("Micro sans fil") } });
+      n++;
+    }
+    console.log(`${n} formule(s) et option(s) 2026 ajoutées au catalogue.`);
+  });
+
   await once("seed.automations.prep.v1", async () => {
     if (await db.automationRule.findFirst({ where: { name: "J-3 : liste de préparation du matériel" } })) return;
     await db.automationRule.create({

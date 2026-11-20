@@ -36,7 +36,7 @@ export function RentalPanel({ loan = false, dossierId, start, end, days, items, 
   return (
     <section className="card overflow-hidden">
       <div className="border-b border-slate-100 px-5 py-3">
-        <h2 className="font-semibold">{loan ? "🤝 Prêt de matériel" : "📦 Location de matériel"}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="font-semibold">{loan ? "🤝 Prêt de matériel" : "📦 Location de matériel"}</h2>{items.length > 0 && <a href={`/materiel/bon/${dossierId}`} className="text-sm text-link-600 hover:underline">🖊 Bon de sortie {checkout?.signature ? "(signé)" : "à faire signer"}</a>}</div>
         <p className="text-sm text-slate-600">{start && end ? <>Retrait le {when(start)}, retour le {when(end)} : <b>{days} jour{days > 1 ? "s" : ""}</b>{loan ? "" : ` facturé${days > 1 ? "s" : ""}`}.</> : "Indiquez les dates de retrait et de retour dans la fiche."}</p>
       </div>
 

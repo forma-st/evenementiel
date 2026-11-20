@@ -63,7 +63,7 @@ export async function quickLoan(_: QuickLoanState, f: FormData): Promise<QuickLo
   if (assigneeId !== u.id) await notify([assigneeId], { type: "TASK", title: `${u.name} vous prête du matériel : « ${d.title} »`, link: `/prestations/${d.id}` }, u.id);
   await syncPrestationEvent(d.id);
   revalidatePath("/materiel");
-  redirect(`/prestations/${d.id}?pret=ok`);
+  redirect(s(f, "signNow") === "on" ? `/materiel/bon/${d.id}` : `/prestations/${d.id}`);
 }
 
 /** Retour en un clic : tout est rendu en bon état ; un prêt passe en « Réalisée » et libère le matériel. */
