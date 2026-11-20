@@ -9,6 +9,10 @@ import { eventKind } from "@/lib/presta";
 import { nextReference } from "@/lib/reference";
 import { syncPrestationEvent } from "@/lib/prestaSync";
 import { runAutomations } from "@/lib/automations";
+import { randomBytes } from "crypto";
+import { sendMail } from "@/lib/mail";
+import { baseUrl } from "@/lib/merge";
+import { getCompany } from "@/lib/company";
 
 const s = (f: FormData, k: string, n = 500) => { const v = f.get(k); return v == null || String(v).trim() === "" ? null : String(v).trim().slice(0, n); };
 const KINDS = ["PRESTA", "RDV", "RENFORT"];
@@ -103,4 +107,54 @@ export async function convertTeamRequest(requestId: string) {
   await syncPrestationEvent(d.id);
   await runAutomations(d.id, d.status, u);
   redirect(`/prestations/${d.id}/modifier`);
+}
+
+// ---------- Renforts extérieurs (sans compte) ----------
+
+export async function saveHelper(id: string | null, _: unknown, f: FormData): Promise<{ error?: string; ok?: boolean }> {
+  await requireStaff();
+  const name = s(f, "name", 120);
+  if (!name) return { error: "Indiquez au moins le prénom." };
+  const data = { name, phone: s(f, "phone", 40), email: s(f, "email", 200)?.toLowerCase() ?? null, skills: f.getAll("skills").map(String).filter((x) => /^[A-Z]{2,12}$/.test(x)).join(","), notes: s(f, "notes", 500) };
+  if (id) await db.helper.update({ where: { id }, data }); else await db.helper.create({ data });
+  revalidatePath("/equipe/demandes");
+  return { ok: true };
+}
+
+export async function toggleHelper(id: string) {
+  await requireStaff();
+  const h = await db.helper.findUnique({ where: { id } });
+  if (h) await db.helper.update({ where: { id }, data: { active: !h.active } });
+  revalidatePath("/equipe/demandes");
+}
+
+const fdate = (d: string | null) => (d ? new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" }).format(new Date(`${d}T12:00:00`)) : "date à définir");
+
+/** Invite des renforts extérieurs : un lien personnel chacun (e-mail envoyé s'il est connu ; sinon SMS / WhatsApp depuis l'écran). */
+export async function inviteHelpers(requestId: string, helperIds: string[]) {
+  const u = await requireStaff();
+  const r = await db.teamRequest.findUnique({ where: { id: requestId } });
+  if (!r || r.status !== "OUVERTE") return;
+  const c = await getCompany();
+  const helpers = await db.helper.findMany({ where: { id: { in: helperIds.slice(0, 30) }, active: true } });
+  for (const h of helpers) {
+    const exists = await db.helperInvite.findUnique({ where: { requestId_helperId: { requestId, helperId: h.id } } });
+    if (exists) continue;
+    const inv = await db.helperInvite.create({ data: { requestId, helperId: h.id, token: randomBytes(18).toString("base64url") } });
+    if (h.email) await sendMail({ to: h.email, replyTo: u.email, subject: `Dispo le ${fdate(r.date)} ? ${r.title}`, text: `Bonjour ${h.name},\n\n${u.name} (${c.name}) cherche un renfort : ${r.title}, ${fdate(r.date)}${r.startTime ? ` à partir de ${r.startTime}` : ""}${r.city ? `, ${r.city}` : ""}.\n\nRépondez en un clic (sans compte) :\n${baseUrl()}/r/${inv.token}\n\nMerci !\n${u.name}` });
+  }
+  revalidatePath("/equipe/demandes");
+}
+
+/** Retient un renfort extérieur : il voit sa mission confirmée sur son lien (et la reçoit par e-mail). */
+export async function assignHelper(requestId: string, helperId: string) {
+  const u = await requireStaff();
+  const r = await db.teamRequest.findUnique({ where: { id: requestId } });
+  if (!r || !canManage(u, r) || r.status !== "OUVERTE") return;
+  const inv = await db.helperInvite.findUnique({ where: { requestId_helperId: { requestId, helperId } }, include: { helper: true } });
+  if (!inv) return;
+  await db.teamRequest.update({ where: { id: requestId }, data: { status: "ATTRIBUEE", helperId } });
+  if (r.dossierId) await db.activity.create({ data: { dossierId: r.dossierId, userId: u.id, kind: "NOTE", body: `🛠 Renfort extérieur : ${inv.helper.name}${inv.helper.phone ? ` (${inv.helper.phone})` : ""}` } });
+  if (inv.helper.email) await sendMail({ to: inv.helper.email, replyTo: u.email, subject: `C'est confirmé : ${r.title}, ${fdate(r.date)}`, text: `Bonjour ${inv.helper.name},\n\nC'est validé, merci ! Toutes les infos de la mission (horaires, lieu, contact) et l'ajout à votre agenda :\n${baseUrl()}/r/${inv.token}\n\n${u.name}` });
+  revalidatePath("/equipe/demandes");
 }

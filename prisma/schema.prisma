@@ -749,7 +749,9 @@ model TeamRequest {
   dossierId   String?     // prestation liée (renfort) ou créée à partir de la demande
   status      String      @default("OUVERTE") // OUVERTE | ATTRIBUEE | CONVERTIE | ANNULEE
   assigneeId  String?
+  helperId    String?     // renfort extérieur retenu (sans compte)
   replies     TeamReply[]
+  invites     HelperInvite[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -767,4 +769,34 @@ model TeamReply {
   updatedAt DateTime    @updatedAt
 
   @@unique([requestId, userId])
+}
+
+// Renfort ponctuel, sans compte : il répond et consulte sa mission par un lien personnel
+model Helper {
+  id        String         @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  skills    String         @default("") // DJ,SONO,LUMIERE,PHOTO…
+  notes     String?
+  active    Boolean        @default(true)
+  invites   HelperInvite[]
+  createdAt DateTime       @default(now())
+}
+
+model HelperInvite {
+  id         String      @id @default(cuid())
+  requestId  String
+  request    TeamRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  helperId   String
+  helper     Helper      @relation(fields: [helperId], references: [id], onDelete: Cascade)
+  token      String
+  answer     String?     // DISPO | PAS_DISPO | PEUT_ETRE
+  comment    String?
+  answeredAt DateTime?
+  viewedAt   DateTime?
+  createdAt  DateTime    @default(now())
+
+  @@unique([requestId, helperId])
+  @@index([token])
 }
