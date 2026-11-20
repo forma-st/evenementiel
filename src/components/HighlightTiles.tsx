@@ -39,8 +39,8 @@ export function HighlightTiles({ events, rentals, totals }: { events: Counts; re
             </div>
           ))}
         </div>
-        <div className="mt-auto grid gap-2 pt-5 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
-          {[["/prestations/nouveau", "Une prestation"], ["/prestations/nouveau?type=LOCATION", "Une location"], ["/clients/nouveau", "Un client"]].map(([h, l]) => (
+        <div className="mt-auto grid grid-cols-2 gap-2 pt-5">
+          {[["/prestations/nouveau", "Une prestation"], ["/prestations/nouveau?type=LOCATION", "Une location"], ["/materiel/sortie", "Un prêt"], ["/clients/nouveau", "Un client"]].map(([h, l]) => (
             <Link key={h} href={h} className="flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium ring-1 ring-[rgba(255,255,255,.50)] transition hover:bg-[rgba(255,255,255,.15)]">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#fff] text-[#1d55c0]"><Icon name="plus" className="h-3.5 w-3.5" /></span>{l}
             </Link>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { OutRow, PrepRow } from "@/lib/gearTracking";
 import { parisParts } from "@/lib/format";
 import { Fold } from "./Fold";
+import { ReturnButton } from "./ReturnButton";
 
 const fmt = (iso: string, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", ...o }).format(new Date(iso));
 const day = (iso: string) => fmt(iso, { weekday: "short", day: "numeric", month: "short" });
@@ -40,8 +41,8 @@ function PrepLine({ r }: { r: PrepRow }) {
 function OutLine({ r }: { r: OutRow }) {
   const n = inDays(r.end);
   return (
-    <li>
-      <Link href={`/prestations/${r.id}`} className={`flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 ${r.late ? "bg-rose-50/70" : ""}`}>
+    <li className={`flex items-center gap-2 pr-3 ${r.late ? "bg-rose-50/70" : ""}`}>
+      <Link href={`/prestations/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-2.5 hover:bg-slate-50">
         <span className={`w-24 shrink-0 rounded-md px-2 py-1 text-center text-xs font-semibold ${r.late ? "bg-rose-600 text-white" : r.kind === "PRESTATION" ? "bg-emerald-100 text-emerald-800" : "bg-sky-100 text-sky-800"}`}>{r.late ? "En retard" : KIND[r.kind]}</span>
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium">{r.icon} {r.title}</div>
@@ -52,6 +53,7 @@ function OutLine({ r }: { r: OutRow }) {
           <div className="text-slate-400">{hour(r.end)}</div>
         </div>
       </Link>
+      {r.kind !== "PRESTATION" && <ReturnButton dossierId={r.id} />}
     </li>
   );
 }

@@ -74,7 +74,9 @@ export async function saveCheckin(dossierId: string, items: CheckinItem[], notes
     return { id: i.id, name: known.get(i.id)!.equipment.name, qty, returned, damaged: Math.min(returned, Math.max(0, Math.round(i.damaged))), note: String(i.note ?? "").slice(0, 300) };
   });
   const damages = clean.reduce((a, i) => a + ((i.qty - i.returned) + i.damaged) * (known.get(i.id)!.equipment.replacementValue ?? 0), 0);
-  await db.dossier.update({ where: { id: dossierId }, data: { checkin: JSON.stringify({ at: new Date().toISOString(), by: user.name, items: clean, notes: notes.slice(0, 3000), damages }) } });
+  // un prêt rendu est terminé : il passe en « Réalisée » et libère le matériel tout de suite
+  const loanDone = d.eventType === "PRET" ? { status: "REALISE", eventEnd: d.eventEnd && d.eventStart && d.eventEnd > new Date() && d.eventStart < new Date() ? new Date() : d.eventEnd } : {};
+  await db.dossier.update({ where: { id: dossierId }, data: { checkin: JSON.stringify({ at: new Date().toISOString(), by: user.name, items: clean, notes: notes.slice(0, 3000), damages }), ...loanDone } });
   const missing = clean.reduce((a, i) => a + i.qty - i.returned, 0), broken = clean.reduce((a, i) => a + i.damaged, 0);
   await db.activity.create({ data: { dossierId, userId: user.id, kind: "STATUS", body: `📦 Retour du matériel : ${missing || broken ? `${missing} manquant(s), ${broken} abîmé(s), dommages estimés ${eur(damages)}` : "tout est rendu en bon état"}` } });
   revalidatePath(`/prestations/${dossierId}`);

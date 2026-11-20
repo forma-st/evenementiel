@@ -11,6 +11,8 @@ import { render, varsForDossier } from "@/lib/merge";
 import { sendMail } from "@/lib/mail";
 import { refreshInvoiceStatus } from "@/lib/invoiceStatus";
 import { equipmentAvailability } from "@/lib/equipment";
+import { parseGear } from "@/lib/gearPick";
+import { nextReference } from "@/lib/reference";
 import { INTERNAL_CLIENT, eventKind, isGearOnly } from "@/lib/presta";
 import type { Field } from "@/lib/questionnaire";
 import { assertClientVisible, assertDossierVisible, requirePerm } from "@/lib/permissions";
@@ -117,12 +119,6 @@ export async function createPortalAccess(clientId: string, _prev: unknown, f: Fo
 
 // ---------------- Prestations ----------------
 
-async function nextReference() {
-  const year = new Date().getFullYear();
-  const last = await db.dossier.findFirst({ where: { reference: { startsWith: `P${year}-` } }, orderBy: { reference: "desc" }, select: { reference: true } });
-  const n = last ? Number(last.reference.split("-")[1]) || 0 : 0;
-  return `P${year}-${String(n + 1).padStart(4, "0")}`;
-}
 
 /** Date + heures saisies (heure de Paris). Une heure de fin inférieure au début passe au lendemain. */
 function eventTimes(f: FormData) {
@@ -195,27 +191,6 @@ async function loanClient(f: FormData, ownerId: string) {
   if (!s(f, "assigneeId")) throw new Error("Choisissez le membre de l'équipe qui emprunte le matériel.");
   const ex = await db.client.findFirst({ where: { name: INTERNAL_CLIENT }, select: { id: true } });
   return ex?.id ?? (await db.client.create({ data: { type: "COMPANY", name: INTERNAL_CLIENT, notes: "Fiche technique : prêts de matériel à l'équipe.", ownerId } })).id;
-}
-
-/** Matériel choisi dans le formulaire (JSON [{id, qty}]) vérifié contre les disponibilités du créneau. */
-async function parseGear(f: FormData, start: Date | null, end: Date | null, exclude = "") {
-  let raw: unknown = [];
-  try { raw = JSON.parse(s(f, "equipment") ?? "[]"); } catch { return { error: "Liste de matériel illisible." } as const; }
-  const wanted = new Map<string, number>();
-  for (const x of Array.isArray(raw) ? raw : []) {
-    const id = typeof x?.id === "string" ? x.id : "";
-    const q = Math.round(Number(x?.qty));
-    if (id && q > 0) wanted.set(id, Math.min(999, (wanted.get(id) ?? 0) + q));
-  }
-  if (!wanted.size) return { items: [] as { id: string; qty: number }[] } as const;
-  const av = await equipmentAvailability(exclude, start, end);
-  for (const [id, qty] of wanted) {
-    const a = av.find((x) => x.id === id);
-    if (!a) return { error: "Un matériel choisi n'existe plus." } as const;
-    const free = a.stock - a.elsewhere;
-    if (qty > free) return { error: free <= 0 ? `« ${a.name} » n'est plus disponible sur ce créneau (réservé par ${a.conflicts.map((c) => c.reference).join(", ")}).` : `Seulement ${free} « ${a.name} » disponible(s) sur ce créneau.` } as const;
-  }
-  return { items: [...wanted].map(([id, qty]) => ({ id, qty })) } as const;
 }
 
 export async function createDossier(_: DossierFormState, f: FormData): Promise<DossierFormState> {

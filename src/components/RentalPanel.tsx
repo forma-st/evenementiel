@@ -3,6 +3,7 @@ import { useState, useTransition } from "react";
 import { createRentalQuote, invoiceDamages, saveCheckin, saveCheckout, setCautionStatus } from "@/app/(staff)/prestations/rental-actions";
 import type { Checkin, Checkout } from "@/lib/rental";
 import { toast } from "@/lib/toast";
+import { ReturnButton } from "./ReturnButton";
 
 type Item = { id: string; name: string; qty: number; dailyRate: number | null; replacementValue: number | null };
 const eur = (n: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n);
@@ -101,7 +102,7 @@ export function RentalPanel({ loan = false, dossierId, start, end, days, items, 
         )}
 
         {/* retour */}
-        {checkout && !checkin && step !== "in" && <button onClick={() => setStep("in")} className="btn-primary">Enregistrer le retour</button>}
+        {checkout && !checkin && step !== "in" && <div className="flex flex-wrap items-center gap-2"><ReturnButton dossierId={dossierId} label="✓ Tout est rendu en bon état" className="px-3.5 py-2 text-sm" /><button onClick={() => setStep("in")} className="btn-secondary">Retour détaillé (manquant, casse)</button></div>}
         {step === "in" && (
           <div className="rounded-xl ring-1 ring-slate-200">
             <div className="border-b border-slate-100 px-4 py-2 text-sm font-medium">État des lieux de retour</div>

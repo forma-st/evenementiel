@@ -114,7 +114,7 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove, top }
             {conflicts > 0 && <> <span className="font-semibold text-rose-700">{conflicts} conflit{conflicts > 1 ? "s" : ""} de stock à régler.</span></>}
           </p>
         </div>
-        <button onClick={() => (adding ? setAdding(false) : openAdd(cat))} className="btn-primary">{adding ? "Fermer" : "+ Ajouter du matériel"}</button>
+        <div className="flex flex-wrap gap-2"><Link href="/materiel/sortie" className="btn-secondary">🤝 Prêter du matériel</Link><button onClick={() => (adding ? setAdding(false) : openAdd(cat))} className="btn-primary">{adding ? "Fermer" : "+ Ajouter du matériel"}</button></div>
       </div>
 
       {adding && (

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireStaff } from "@/lib/auth";
 import { gearTracking } from "@/lib/gearTracking";
+import { ReturnButton } from "@/components/ReturnButton";
 import { parisParts, TZ } from "@/lib/format";
 
 export const metadata = { title: "Préparations" };
@@ -18,6 +19,7 @@ export default async function PrepIndex() {
         <Link href="/" className="text-sm opacity-80">← Tableau de bord</Link>
         <h1 className="mt-2 text-2xl font-semibold">📋 Préparation du matériel</h1>
         <p className="text-sm opacity-80">Touchez une prestation pour cocher son matériel.</p>
+        <Link href="/materiel/sortie" className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-[#fff] px-4 py-3 font-semibold text-[#1d55c0] shadow-lg">🤝 Prêter du matériel</Link>
       </header>
       <div className="space-y-3 p-4">
         {toPrepare.length === 0 && <p className="py-10 text-center text-slate-500">Rien à préparer dans les 3 prochaines semaines.</p>}
@@ -41,10 +43,13 @@ export default async function PrepIndex() {
           <>
             <h2 className="pt-4 text-sm font-semibold text-slate-500">Matériel dehors</h2>
             {out.map((r) => (
-              <Link key={r.id} href={`/prestations/${r.id}`} className={`card block p-4 ${r.late ? "ring-2 ring-rose-400" : ""}`}>
+              <div key={r.id} className={`card flex items-center gap-3 p-4 ${r.late ? "ring-2 ring-rose-400" : ""}`}>
+               <Link href={`/prestations/${r.id}`} className="min-w-0 flex-1">
                 <div className="font-semibold">{r.icon} {r.title}</div>
                 <div className={`text-sm ${r.late ? "font-medium text-rose-700" : "text-slate-500"}`}>{r.late ? "Retour en retard" : "Retour prévu"} : {new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: TZ }).format(new Date(r.end))}</div>
-              </Link>
+               </Link>
+               {r.kind !== "PRESTATION" && <ReturnButton dossierId={r.id} className="py-2 text-sm" />}
+              </div>
             ))}
           </>
         )}
