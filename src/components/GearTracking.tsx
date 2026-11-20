@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { OutRow, PrepRow } from "@/lib/gearTracking";
 import { parisParts } from "@/lib/format";
+import { Fold } from "./Fold";
 
 const fmt = (iso: string, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", ...o }).format(new Date(iso));
 const day = (iso: string) => fmt(iso, { weekday: "short", day: "numeric", month: "short" });
@@ -58,23 +59,19 @@ function OutLine({ r }: { r: OutRow }) {
 /** Listes « à préparer » et « sorti » (page Matériel). */
 export function GearTracking({ toPrepare, out, horizon }: { toPrepare: PrepRow[]; out: OutRow[]; horizon: number }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <section className="card overflow-hidden" aria-labelledby="gt-prep">
-        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-          <h2 id="gt-prep" className="font-semibold">📋 Matériel à préparer <span className="ml-1 badge bg-slate-100 text-slate-600">{toPrepare.length}</span></h2>
-          <span className="text-xs text-slate-500">{horizon} prochains jours</span>
-        </div>
+    <div className="grid items-start gap-4 lg:grid-cols-2">
+      <Fold id="gt-prep" title={<>📋 Matériel à préparer <span className="ml-1 badge bg-slate-100 text-slate-600">{toPrepare.length}</span></>}
+        summary={toPrepare.length ? `prochaine : ${toPrepare[0].title} (${when(inDays(toPrepare[0].start))})` : `rien dans les ${horizon} jours`}
+        actions={toPrepare.some((r) => inDays(r.start) <= 1 && !(r.hasList && r.done === r.total && r.total > 0)) ? <span className="badge bg-amber-100 text-amber-800">urgent</span> : <Link href="/preparer" className="text-xs text-link-600 hover:underline">Mode préparation</Link>}>
         {toPrepare.length === 0 ? <p className="px-4 py-6 text-center text-sm text-slate-500">Rien à préparer pour l&apos;instant.</p>
           : <ul className="max-h-80 divide-y divide-slate-100 overflow-y-auto">{toPrepare.map((r) => <PrepLine key={r.id} r={r} />)}</ul>}
-      </section>
-      <section className="card overflow-hidden" aria-labelledby="gt-out">
-        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-          <h2 id="gt-out" className="font-semibold">🚚 Matériel sorti <span className="ml-1 badge bg-slate-100 text-slate-600">{out.length}</span></h2>
-          {out.some((o) => o.late) && <span className="badge bg-rose-100 text-rose-700">{out.filter((o) => o.late).length} retour(s) en retard</span>}
-        </div>
+      </Fold>
+      <Fold id="gt-out" title={<>🚚 Matériel sorti <span className="ml-1 badge bg-slate-100 text-slate-600">{out.length}</span></>}
+        summary={out.length ? `${out.reduce((a, o) => a + o.units, 0)} unité(s) dehors` : "tout est au dépôt"}
+        actions={out.some((o) => o.late) ? <span className="badge bg-rose-100 text-rose-700">{out.filter((o) => o.late).length} en retard</span> : undefined}>
         {out.length === 0 ? <p className="px-4 py-6 text-center text-sm text-slate-500">Tout le matériel est au dépôt.</p>
           : <ul className="max-h-80 divide-y divide-slate-100 overflow-y-auto">{out.map((r) => <OutLine key={r.id} r={r} />)}</ul>}
-      </section>
+      </Fold>
     </div>
   );
 }

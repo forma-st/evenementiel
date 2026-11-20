@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { Fold } from "./Fold";
 
 export type BoardBooking = {
   dossierId: string; reference: string; title: string; status: string; icon: string;
@@ -64,6 +65,10 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove, top }
   const [open, setOpen] = useState<string | null>(null); // case du planning ouverte
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [addCat, setAddCat] = useState("");
+  const addRef = useRef<HTMLFormElement>(null);
+  const openAdd = (c = "") => { setAddCat(c); setAdding(true); requestAnimationFrame(() => { addRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); addRef.current?.querySelector<HTMLInputElement>("input[name=name]")?.focus(); }); };
+  const searching = q.trim() !== "" || cat !== "";
 
   const match = (i: BoardItem) => (!cat || i.category === cat) && (!q.trim() || i.name.toLowerCase().includes(q.trim().toLowerCase()));
   const filtered = items.filter(match);
@@ -109,13 +114,13 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove, top }
             {conflicts > 0 && <> <span className="font-semibold text-rose-700">{conflicts} conflit{conflicts > 1 ? "s" : ""} de stock à régler.</span></>}
           </p>
         </div>
-        <button onClick={() => setAdding((x) => !x)} className="btn-primary">{adding ? "Fermer" : "Ajouter du matériel"}</button>
+        <button onClick={() => (adding ? setAdding(false) : openAdd(cat))} className="btn-primary">{adding ? "Fermer" : "+ Ajouter du matériel"}</button>
       </div>
 
       {adding && (
-        <form action={async (f) => { await save(null, f); setAdding(false); }} className="card grid gap-3 p-5 sm:grid-cols-[1fr_180px_100px_1fr_auto] sm:items-end">
+        <form ref={addRef} key={addCat} action={async (f) => { await save(null, f); setAdding(false); }} className="card grid scroll-mt-24 gap-3 p-5 ring-2 ring-brand-200 sm:grid-cols-[1fr_180px_100px_1fr_auto] sm:items-end">
           <label className="block"><span className="label">Désignation</span><input name="name" required autoFocus placeholder="Enceinte 15 pouces 1200 W" className="input" /></label>
-          <label className="block"><span className="label">Catégorie</span><select name="category" defaultValue={cat || "SONO"} className="input">{cats.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
+          <label className="block"><span className="label">Catégorie</span><select name="category" defaultValue={addCat || cat || "SONO"} className="input">{cats.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
           <label className="block"><span className="label">Quantité</span><input name="quantity" type="number" min={0} defaultValue={1} className="input" /></label>
           <label className="block"><span className="label">Notes</span><input name="notes" placeholder="N° de série, état, emplacement…" className="input" /></label>
           <button className="btn-primary">Ajouter</button>
@@ -126,9 +131,10 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove, top }
 
       {/* Frise des prochaines sorties */}
       {outings.length > 0 && (
-        <section aria-label="Prochaines sorties">
-          <h2 className="mb-3 text-lg font-semibold">Prochaines sorties</h2>
-          <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2">
+        <Fold id="eq-outings" title={<>Prochaines sorties <span className="ml-1 badge bg-slate-100 text-slate-600">{outings.length}</span></>}
+          summary={next ? `${weekday(next.iso)} ${dayNum(next.iso)} ${month(next.iso)}${conflicts ? ` · ${conflicts} conflit(s)` : ""}` : undefined}
+          actions={conflicts > 0 ? <span className="badge bg-rose-100 text-rose-700">⛔ {conflicts} conflit{conflicts > 1 ? "s" : ""}</span> : undefined}>
+          <div className="flex snap-x gap-3 overflow-x-auto p-4">
             {outings.map((o) => {
               const evs = [...o.events.values()];
               const d = daysUntil(o.iso);
@@ -160,7 +166,7 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove, top }
               );
             })}
           </div>
-        </section>
+        </Fold>
       )}
 
       {/* Filtres communs au planning et à l'inventaire */}
@@ -179,9 +185,8 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove, top }
       </div>
 
       {/* Planning */}
-      <section aria-labelledby="planning" className="card">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
-          <h2 id="planning" className="font-semibold">Planning</h2>
+      <Fold id="eq-planning" title="Planning" summary={`${days} jours · ${cols.length} sortie${cols.length > 1 ? "s" : ""}`}>
+        <div className="flex flex-wrap items-center justify-end gap-3 border-b border-slate-100 px-5 py-2">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
             {(["ok", "option", "full", "over"] as Tone[]).map((t) => <span key={t} className="flex items-center gap-1.5"><span className={`h-2.5 w-2.5 rounded-full ${TONE[t].dot}`} />{TONE[t].label}</span>)}
             <label className="flex items-center gap-1.5"><input type="checkbox" checked={showFree} onChange={(e) => setShowFree(e.target.checked)} className="accent-brand-600" /> afficher le matériel libre</label>
@@ -280,18 +285,23 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove, top }
             </div>
           );
         })()}
-      </section>
+      </Fold>
 
       {/* Inventaire */}
       <section aria-labelledby="inventaire" className="space-y-4">
-        <h2 id="inventaire" className="text-lg font-semibold">Inventaire <span className="text-sm font-normal text-slate-500">{filtered.length} article{filtered.length > 1 ? "s" : ""}</span></h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="inventaire" className="text-lg font-semibold">Inventaire <span className="text-sm font-normal text-slate-500">{filtered.length} article{filtered.length > 1 ? "s" : ""}</span></h2>
+          <button onClick={() => openAdd(cat)} className="btn-secondary py-1.5 text-sm">+ Ajouter du matériel</button>
+        </div>
         {filtered.length === 0 && <p className="card p-8 text-center text-sm text-slate-500">Aucun matériel ne correspond. <button onClick={() => { setQ(""); setCat(""); }} className="text-link-600 hover:underline">Effacer les filtres</button></p>}
         {cats.map((c) => {
           const list = filtered.filter((i) => i.category === c.id);
           if (!list.length) return null;
           return (
-            <div key={c.id} className="card overflow-hidden">
-              <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50/60 px-5 py-2.5 text-sm font-medium text-slate-700"><span aria-hidden>{c.icon}</span>{c.label}</div>
+            <Fold key={c.id} id={`eq-cat-${c.id}`} forceOpen={searching}
+              title={<><span aria-hidden>{c.icon}</span> {c.label}</>}
+              summary={`${list.length} article${list.length > 1 ? "s" : ""} · ${list.reduce((a, i) => a + i.quantity, 0)} unités${list.some((i) => i.outOfService) ? ` · ${list.reduce((a, i) => a + i.outOfService, 0)} en réparation` : ""}`}
+              actions={<button onClick={() => openAdd(c.id)} className="rounded-lg px-2 py-1 text-xs font-medium text-link-600 hover:bg-link-100">+ Ajouter</button>}>
               <ul className="divide-y divide-slate-100">
                 {list.map((i) => {
                   const peak = i.bookings.length ? Math.max(...i.bookings.map((b) => usedAround(i, b))) : 0;
@@ -349,10 +359,13 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove, top }
                   );
                 })}
               </ul>
-            </div>
+            </Fold>
           );
         })}
       </section>
+
+      {/* ajout rapide, toujours à portée de main */}
+      {!adding && <button onClick={() => openAdd(cat)} aria-label="Ajouter du matériel" className="btn-primary fixed right-5 bottom-5 z-30 rounded-full px-5 py-3 shadow-xl print:hidden">+ Matériel</button>}
     </div>
   );
 }
