@@ -43,7 +43,10 @@ async function executeRule(rule: AutomationRule, dossierId: string, actor: Actor
   };
 
   const done: string[] = [];
+  // prêt de matériel : rien vers le client, seulement la préparation interne
+  const internalOnly = d.eventType === "PRET";
   for (const a of parseActions(rule.actions)) {
+    if (internalOnly && a.kind !== "PREP_LIST" && a.kind !== "NOTIFY") continue;
     try {
       if (a.kind === "SEND_EMAIL") {
         const tpl = await db.emailTemplate.findUnique({ where: { id: a.templateId } });

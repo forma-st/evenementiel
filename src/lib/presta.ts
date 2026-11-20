@@ -10,8 +10,12 @@ export const EVENT_KINDS = [
   { id: "CONCERT", label: "Concert / spectacle", icon: "🎤" },
   { id: "SEANCE", label: "Séance photo", icon: "📷" },
   { id: "LOCATION", label: "Location de matériel", icon: "📦" },
+  { id: "PRET", label: "Prêt de matériel (équipe, associé)", icon: "🤝" },
   { id: "AUTRE", label: "Autre", icon: "•" },
 ] as const;
+/** Sorties de matériel sans prestation (location, prêt) : choix du matériel dès la création. */
+export const isGearOnly = (type: string) => type === "LOCATION" || type === "PRET";
+
 export const eventKind = (id: string) => EVENT_KINDS.find((k) => k.id === id) ?? EVENT_KINDS[EVENT_KINDS.length - 1];
 
 export const SERVICES = [
@@ -52,3 +56,6 @@ export const EQUIPMENT_CATEGORIES = [
 export const SOURCES = ["Site internet", "Instagram", "Facebook", "Mariages.net", "Bouche à oreille", "Salon du mariage", "Recommandation lieu / traiteur", "Client fidèle", "Autre"];
 
 export const PAYMENT_METHODS = ["Virement", "Chèque", "Espèces", "Carte bancaire", "PayPal / Lydia"];
+
+/** Fiche client technique qui regroupe les prêts à l'équipe. */
+export const INTERNAL_CLIENT = "Équipe (prêts internes)";

@@ -11,7 +11,7 @@ import { render, varsForDossier } from "@/lib/merge";
 import { sendMail } from "@/lib/mail";
 import { refreshInvoiceStatus } from "@/lib/invoiceStatus";
 import { equipmentAvailability } from "@/lib/equipment";
-import { eventKind } from "@/lib/presta";
+import { INTERNAL_CLIENT, eventKind, isGearOnly } from "@/lib/presta";
 import type { Field } from "@/lib/questionnaire";
 import { assertClientVisible, assertDossierVisible, requirePerm } from "@/lib/permissions";
 import { notify } from "@/lib/notify";
@@ -187,35 +187,95 @@ async function resolveClient(f: FormData, ownerId: string) {
   return c.id;
 }
 
-export async function createDossier(f: FormData) {
-  const user = await requireStaff();
-  const clientId = await resolveClient(f, user.id);
-  const data = dossierData(f);
-  if (!s(f, "title")) {
-    const cl = await db.client.findUnique({ where: { id: clientId }, select: { name: true } });
-    data.title = `${eventKind(data.eventType).label} — ${cl?.name ?? "client"}`;
+export type DossierFormState = { error?: string } | null;
+
+/** Prêt : à un membre de l'équipe (fiche client interne) ou à un associé (client normal). */
+async function loanClient(f: FormData, ownerId: string) {
+  if (s(f, "loanTo") !== "TEAM") return resolveClient(f, ownerId);
+  if (!s(f, "assigneeId")) throw new Error("Choisissez le membre de l'équipe qui emprunte le matériel.");
+  const ex = await db.client.findFirst({ where: { name: INTERNAL_CLIENT }, select: { id: true } });
+  return ex?.id ?? (await db.client.create({ data: { type: "COMPANY", name: INTERNAL_CLIENT, notes: "Fiche technique : prêts de matériel à l'équipe.", ownerId } })).id;
+}
+
+/** Matériel choisi dans le formulaire (JSON [{id, qty}]) vérifié contre les disponibilités du créneau. */
+async function parseGear(f: FormData, start: Date | null, end: Date | null, exclude = "") {
+  let raw: unknown = [];
+  try { raw = JSON.parse(s(f, "equipment") ?? "[]"); } catch { return { error: "Liste de matériel illisible." } as const; }
+  const wanted = new Map<string, number>();
+  for (const x of Array.isArray(raw) ? raw : []) {
+    const id = typeof x?.id === "string" ? x.id : "";
+    const q = Math.round(Number(x?.qty));
+    if (id && q > 0) wanted.set(id, Math.min(999, (wanted.get(id) ?? 0) + q));
   }
-  const d = await db.dossier.create({ data: { ...data, clientId, reference: await nextReference() } });
-  await notify([d.assigneeId], { type: "TASK", title: `${user.name} vous a confié la prestation « ${d.title} »`, link: `/prestations/${d.id}` }, user.id);
-  await db.activity.create({ data: { dossierId: d.id, userId: user.id, kind: "STATUS", body: "Prestation créée" } });
+  if (!wanted.size) return { items: [] as { id: string; qty: number }[] } as const;
+  const av = await equipmentAvailability(exclude, start, end);
+  for (const [id, qty] of wanted) {
+    const a = av.find((x) => x.id === id);
+    if (!a) return { error: "Un matériel choisi n'existe plus." } as const;
+    const free = a.stock - a.elsewhere;
+    if (qty > free) return { error: free <= 0 ? `« ${a.name} » n'est plus disponible sur ce créneau (réservé par ${a.conflicts.map((c) => c.reference).join(", ")}).` : `Seulement ${free} « ${a.name} » disponible(s) sur ce créneau.` } as const;
+  }
+  return { items: [...wanted].map(([id, qty]) => ({ id, qty })) } as const;
+}
+
+export async function createDossier(_: DossierFormState, f: FormData): Promise<DossierFormState> {
+  const user = await requireStaff();
+  const data = dossierData(f);
+  const gear = isGearOnly(data.eventType);
+  const loan = data.eventType === "PRET";
+  if (gear && (!data.eventStart || !data.eventEnd)) return { error: "Indiquez les dates de sortie et de retour du matériel." };
+  const picked = gear ? await parseGear(f, data.eventStart, data.eventEnd) : { items: [] };
+  if ("error" in picked) return { error: picked.error };
+  let clientId: string;
+  try { clientId = loan ? await loanClient(f, user.id) : await resolveClient(f, user.id); } catch (e) { return { error: (e as Error).message }; }
+  if (!s(f, "title")) {
+    if (loan && s(f, "loanTo") === "TEAM") {
+      const u = await db.user.findUnique({ where: { id: data.assigneeId! }, select: { name: true } });
+      data.title = `Prêt — ${u?.name ?? "équipe"}`;
+    } else {
+      const cl = await db.client.findUnique({ where: { id: clientId }, select: { name: true } });
+      data.title = `${loan ? "Prêt" : eventKind(data.eventType).label} — ${cl?.name ?? "client"}`;
+    }
+  }
+  if (loan) { data.amount = null; data.depositPercent = 0; data.cautionAmount = null; }
+  const d = await db.dossier.create({
+    data: { ...data, clientId, reference: await nextReference(), equipment: picked.items.length ? { create: picked.items.map((i) => ({ equipmentId: i.id, quantity: i.qty })) } : undefined },
+  });
+  if (d.assigneeId !== user.id) await notify([d.assigneeId], { type: "TASK", title: loan ? `${user.name} vous prête du matériel : « ${d.title} »` : `${user.name} vous a confié la prestation « ${d.title} »`, link: `/prestations/${d.id}` }, user.id);
+  await db.activity.create({ data: { dossierId: d.id, userId: user.id, kind: "STATUS", body: loan ? `Prêt créé (${picked.items.length} matériel(s))` : gear ? `Location créée (${picked.items.length} matériel(s))` : "Prestation créée" } });
   await syncPrestationEvent(d.id);
-  await runAutomations(d.id, d.status, user);
+  if (!loan) await runAutomations(d.id, d.status, user);
   redirect(`/prestations/${d.id}`);
 }
 
-export async function updateDossier(id: string, f: FormData) {
+export async function updateDossier(id: string, _: DossierFormState, f: FormData): Promise<DossierFormState> {
   const user = await requireStaff();
   await assertDossierVisible(user, id);
   const before = await db.dossier.findUniqueOrThrow({ where: { id } });
-  const d = await db.dossier.update({ where: { id }, data: { ...dossierData(f), clientId: await resolveClient(f, user.id) } });
-  if (d.assigneeId !== before.assigneeId)
+  const data = dossierData(f);
+  const loan = data.eventType === "PRET";
+  if (isGearOnly(data.eventType) && (!data.eventStart || !data.eventEnd)) return { error: "Indiquez les dates de sortie et de retour du matériel." };
+  let clientId: string;
+  try { clientId = loan ? await loanClient(f, user.id) : await resolveClient(f, user.id); } catch (e) { return { error: (e as Error).message }; }
+  // ne pas écraser les champs absents du formulaire (location / prêt)
+  const keep = <K extends keyof typeof data>(k: K) => (f.has(k as string) ? data[k] : (before as unknown as typeof data)[k]);
+  const d = await db.dossier.update({
+    where: { id },
+    data: {
+      ...data, clientId,
+      services: keep("services"), setupTime: keep("setupTime"), guests: keep("guests"), venueName: keep("venueName"), venueAddress: keep("venueAddress"),
+      venueCity: keep("venueCity"), venueContact: keep("venueContact"), source: keep("source"), priority: keep("priority"), amount: keep("amount"),
+      depositPercent: keep("depositPercent"), cautionAmount: keep("cautionAmount"), dueDate: keep("dueDate"), lostReason: keep("lostReason"),
+    },
+  });
+  if (d.assigneeId !== before.assigneeId && d.assigneeId !== user.id)
     await notify([d.assigneeId], { type: "TASK", title: `${user.name} vous a confié la prestation « ${d.title} »`, link: `/prestations/${d.id}` }, user.id);
   if (d.eventStart?.getTime() !== before.eventStart?.getTime() && before.eventStart)
     await db.activity.create({ data: { dossierId: id, userId: user.id, kind: "STATUS", body: `Date modifiée : ${dateTime(before.eventStart)} → ${d.eventStart ? dateTime(d.eventStart) : "sans date"}` } });
   await syncPrestationEvent(id);
   if (d.status !== before.status) {
     await db.activity.create({ data: { dossierId: id, userId: user.id, kind: "STATUS", body: `Statut : ${statusOf(before.status).label} → ${statusOf(d.status).label}` } });
-    await runAutomations(id, d.status, user);
+    if (!loan) await runAutomations(id, d.status, user);
   }
   redirect(`/prestations/${id}`);
 }

@@ -4,6 +4,8 @@ import { EQUIPMENT_CATEGORIES, eventKind } from "@/lib/presta";
 import { startOfDay, addDays } from "@/lib/tasks";
 import { HOLDING_STATUSES } from "@/lib/equipment";
 import { EquipmentBoard, type BoardItem } from "@/components/EquipmentBoard";
+import { gearTracking } from "@/lib/gearTracking";
+import { GearTracking } from "@/components/GearTracking";
 import { deleteEquipment, saveEquipment } from "../catalogue/actions";
 
 export const metadata = { title: "Matériel" };
@@ -16,7 +18,7 @@ export default async function EquipmentPage({ searchParams }: { searchParams: Pr
   const sp = await searchParams;
   const days = PERIODS.some(([n]) => String(n) === sp.jours) ? Number(sp.jours) : 90;
   const from = startOfDay();
-  const items = await db.equipment.findMany({
+  const [items, track] = await Promise.all([db.equipment.findMany({
     where: { active: true },
     orderBy: [{ category: "asc" }, { name: "asc" }],
     include: {
@@ -25,7 +27,7 @@ export default async function EquipmentPage({ searchParams }: { searchParams: Pr
         include: { dossier: { select: { id: true, reference: true, title: true, status: true, eventType: true, eventStart: true, eventEnd: true, venueCity: true, venueName: true, client: { select: { name: true } } } } },
       },
     },
-  });
+  }), gearTracking(14)]);
   const data: BoardItem[] = items.map((i) => ({
     id: i.id, name: i.name, category: i.category, quantity: i.quantity, outOfService: i.outOfService, notes: i.notes, dailyRate: i.dailyRate, replacementValue: i.replacementValue,
     bookings: i.bookings
@@ -44,6 +46,7 @@ export default async function EquipmentPage({ searchParams }: { searchParams: Pr
       periods={PERIODS}
       save={saveEquipment}
       remove={deleteEquipment}
+      top={<GearTracking toPrepare={track.toPrepare} out={track.out} horizon={14} />}
     />
   );
 }

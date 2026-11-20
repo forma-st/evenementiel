@@ -49,7 +49,8 @@ function usedAround(i: BoardItem, b: BoardBooking) {
 }
 const usable = (i: BoardItem) => Math.max(0, i.quantity - i.outOfService);
 
-export function EquipmentBoard({ items, cats, days, periods, save, remove }: {
+export function EquipmentBoard({ items, cats, days, periods, save, remove, top }: {
+  top?: React.ReactNode;
   items: BoardItem[];
   cats: Cat[];
   days: number;
@@ -120,6 +121,8 @@ export function EquipmentBoard({ items, cats, days, periods, save, remove }: {
           <button className="btn-primary">Ajouter</button>
         </form>
       )}
+
+      {top}
 
       {/* Frise des prochaines sorties */}
       {outings.length > 0 && (

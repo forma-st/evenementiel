@@ -16,8 +16,8 @@ const CAUTION: Record<string, { label: string; cls: string }> = {
 };
 
 /** Location de matériel : période, caution, état des lieux de départ et de retour, dommages. */
-export function RentalPanel({ dossierId, start, end, days, items, caution, cautionStatus, checkout, checkin }: {
-  dossierId: string; start: string | null; end: string | null; days: number; items: Item[];
+export function RentalPanel({ loan = false, dossierId, start, end, days, items, caution, cautionStatus, checkout, checkin }: {
+  loan?: boolean; dossierId: string; start: string | null; end: string | null; days: number; items: Item[];
   caution: number | null; cautionStatus: string; checkout: Checkout | null; checkin: Checkin | null;
 }) {
   const [pending, run] = useTransition();
@@ -34,19 +34,19 @@ export function RentalPanel({ dossierId, start, end, days, items, caution, cauti
   return (
     <section className="card overflow-hidden">
       <div className="border-b border-slate-100 px-5 py-3">
-        <h2 className="font-semibold">📦 Location de matériel</h2>
-        <p className="text-sm text-slate-600">{start && end ? <>Retrait le {when(start)}, retour le {when(end)} : <b>{days} jour{days > 1 ? "s" : ""}</b> facturé{days > 1 ? "s" : ""}.</> : "Indiquez les dates de retrait et de retour dans la fiche."}</p>
+        <h2 className="font-semibold">{loan ? "🤝 Prêt de matériel" : "📦 Location de matériel"}</h2>
+        <p className="text-sm text-slate-600">{start && end ? <>Retrait le {when(start)}, retour le {when(end)} : <b>{days} jour{days > 1 ? "s" : ""}</b>{loan ? "" : ` facturé${days > 1 ? "s" : ""}`}.</> : "Indiquez les dates de retrait et de retour dans la fiche."}</p>
       </div>
 
       {/* étapes : préparation, remis au client, rendu */}
       <ol className="grid grid-cols-3 border-b border-slate-100 text-center text-xs">
-        {["Préparation", "Remis au client", "Rendu"].map((l, i) => (
+        {["Préparation", loan ? "Prêté" : "Remis au client", "Rendu"].map((l, i) => (
           <li key={l} className={`py-2 ${stage > i + 1 ? "text-emerald-700" : stage === i + 1 ? "bg-brand-50 font-semibold text-brand-700" : "text-slate-400"}`}>{stage > i + 1 ? "✓ " : ""}{l}</li>
         ))}
       </ol>
 
       <div className="space-y-5 p-5">
-        <div className="grid gap-4 sm:grid-cols-2">
+        {!loan && <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <div className="text-xs text-slate-500">Location (tarifs du parc)</div>
             <div className="text-lg font-semibold tabular-nums">{eur(rentTotal)} HT</div>
@@ -64,12 +64,12 @@ export function RentalPanel({ dossierId, start, end, days, items, caution, cauti
               </div>
             ) : <p className="text-xs text-slate-500">Montant à saisir dans « Modifier » (rubrique Suivi).</p>}
           </div>
-        </div>
+        </div>}
 
-        {items.length === 0 && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Réservez d&apos;abord le matériel loué dans la rubrique « Matériel réservé ».</p>}
+        {items.length === 0 && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Réservez d&apos;abord le matériel {loan ? "prêté" : "loué"} dans la rubrique « Matériel réservé ».</p>}
 
         {/* départ */}
-        {items.length > 0 && !checkout && step !== "out" && <button onClick={() => setStep("out")} className="btn-primary">Remettre le matériel au client</button>}
+        {items.length > 0 && !checkout && step !== "out" && <button onClick={() => setStep("out")} className="btn-primary">{loan ? "Valider la sortie du matériel" : "Remettre le matériel au client"}</button>}
         {step === "out" && (
           <div className="rounded-xl ring-1 ring-slate-200">
             <div className="border-b border-slate-100 px-4 py-2 text-sm font-medium">État des lieux de départ</div>
@@ -93,7 +93,7 @@ export function RentalPanel({ dossierId, start, end, days, items, caution, cauti
         )}
         {checkout && (
           <div className="text-sm">
-            <div className="font-medium text-emerald-700">✓ Remis au client le {when(checkout.at)} par {checkout.by}</div>
+            <div className="font-medium text-emerald-700">✓ {loan ? "Sorti" : "Remis au client"} le {when(checkout.at)} par {checkout.by}</div>
             <div className="text-slate-600">{checkout.items.map((i) => `${i.qty} × ${i.name}${i.ok ? "" : " (réserve)"}`).join(", ")}</div>
             {checkout.notes && <div className="text-xs text-slate-500">{checkout.notes}</div>}
           </div>
@@ -130,7 +130,7 @@ export function RentalPanel({ dossierId, start, end, days, items, caution, cauti
             <div className={`font-medium ${checkin.damages > 0 ? "text-rose-700" : "text-emerald-700"}`}>{checkin.damages > 0 ? "⚠" : "✓"} Rendu le {when(checkin.at)} : {checkin.damages > 0 ? `dommages estimés ${eur(checkin.damages)}` : "tout est rendu en bon état"}</div>
             {checkin.items.filter((i) => i.returned < i.qty || i.damaged).map((i) => <div key={i.id} className="text-slate-600">{i.name} : {i.qty - i.returned} manquant(s), {i.damaged} abîmé(s){i.note ? `, ${i.note}` : ""}</div>)}
             <div className="flex flex-wrap gap-2">
-              {checkin.damages > 0 && <button disabled={pending} onClick={() => run(() => invoiceDamages(dossierId))} className="btn-primary py-1.5 text-xs">Facturer les dommages</button>}
+              {checkin.damages > 0 && !loan && <button disabled={pending} onClick={() => run(() => invoiceDamages(dossierId))} className="btn-primary py-1.5 text-xs">Facturer les dommages</button>}
               {caution && cautionStatus === "RECUE" && <form action={setCautionStatus.bind(null, dossierId, checkin.damages > 0 ? "RETENUE" : "RESTITUEE")}><button className="btn-secondary py-1.5 text-xs">{checkin.damages > 0 ? "Retenir la caution" : "Restituer la caution"}</button></form>}
             </div>
           </div>

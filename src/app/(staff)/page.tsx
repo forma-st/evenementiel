@@ -9,6 +9,8 @@ import { eventType } from "@/lib/events";
 import { eventKind } from "@/lib/presta";
 import { parsePrep } from "@/lib/prep";
 import { SIGNATURE_STATUSES } from "@/lib/signature";
+import { gearTracking } from "@/lib/gearTracking";
+import { GearTrackingWidget } from "@/components/GearTracking";
 import { WIDGETS, WIDGET_IDS, allowed, readLayout, type WidgetId } from "@/lib/widgets";
 import { conversationsFor } from "@/lib/chat";
 import { getCompany } from "@/lib/company";
@@ -40,6 +42,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const on = new Set(layout.map((l) => l.id));
   const needStats = ["kpis", "revenue", "pipeline", "tasksChart"].some((w) => on.has(w as WidgetId));
 
+  const gearP = on.has("gear") ? gearTracking(14) : null;
   const [stats, members, myTasks, myEvents, recent, rows, signatures, answers, convs, upcoming, pays] = await Promise.all([
     needStats ? dashboardStats(memberId, period) : null,
     team ? db.user.findMany({ where: { role: { not: "CLIENT" }, active: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }) : null,
@@ -81,6 +84,13 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           })}
         </div>
       ),
+    };
+  }
+  const gear = gearP ? await gearP : null;
+  if (gear) {
+    contents.gear = {
+      action: <More href="/materiel">Parc matériel →</More>,
+      body: <GearTrackingWidget {...gear} />,
     };
   }
   if (on.has("upcoming")) {

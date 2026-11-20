@@ -22,7 +22,7 @@ import { invoiceFromPayment } from "../../factures/actions";
 import { INVOICE_KINDS, INVOICE_STATUSES } from "@/lib/invoices";
 import { requireStaff } from "@/lib/auth";
 import { assertDossierVisible, permsFor } from "@/lib/permissions";
-import { eventKind, parseServices, serviceOf, PAYMENT_METHODS } from "@/lib/presta";
+import { eventKind, isGearOnly, parseServices, serviceOf, PAYMENT_METHODS } from "@/lib/presta";
 import { GALLERY_STATUSES } from "@/lib/galleries";
 import { baseUrl, render, varsForDossier } from "@/lib/merge";
 import { isMailConfigured } from "@/lib/mail";
@@ -65,6 +65,7 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
   const vars = vars0 ?? {};
   const paid = d.payments.filter((p) => p.paidAt).reduce((a, p) => a + p.amount, 0);
   const totalDue = d.payments.reduce((a, p) => a + p.amount, 0);
+  const loan = d.eventType === "PRET";
   const days = d.eventStart ? Math.ceil((d.eventStart.getTime() - Date.now()) / 864e5) : null;
 
   const availability = await equipmentAvailability(id, d.eventStart, d.eventEnd);
@@ -80,8 +81,8 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
         subtitle={<>{d.reference} · <Link href={`/clients/${d.clientId}`} className="text-link-600 hover:underline">{d.client.name}</Link>{d.client.phone && <> · <a href={`tel:${d.client.phone}`} className="hover:underline">{d.client.phone}</a></>}{d.client.email && <> · <a href={`mailto:${d.client.email}`} className="hover:underline">{d.client.email}</a></>}</>}
         actions={
           <>
-            {perms.canCreateQuotes && <Link href={`/devis/nouveau?dossierId=${id}`} className="btn-secondary">+ Devis</Link>}
-            {perms.canSendSignatures && <Link href={`/contrats/generer?dossierId=${id}`} className="btn-secondary">✍ Contrat</Link>}
+            {perms.canCreateQuotes && !loan && <Link href={`/devis/nouveau?dossierId=${id}`} className="btn-secondary">+ Devis</Link>}
+            {perms.canSendSignatures && !loan && <Link href={`/contrats/generer?dossierId=${id}`} className="btn-secondary">✍ Contrat</Link>}
             <Link href={`/galeries/nouvelle?dossierId=${id}`} className="btn-secondary">📷 Galerie</Link>
             <Link href={`/prestations/${id}/modifier`} className="btn-primary">Modifier</Link>
             {perms.canDeleteDossiers && (
@@ -134,8 +135,9 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="min-w-0 space-y-6 lg:col-span-2">
-          {d.eventType === "LOCATION" && (
+          {isGearOnly(d.eventType) && (
             <RentalPanel
+              loan={loan}
               key={d.equipment.map((x) => `${x.equipmentId}:${x.quantity}`).join(",")}
               dossierId={id}
               start={d.eventStart?.toISOString() ?? null}
@@ -149,7 +151,7 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
             />
           )}
 
-          <Card title="Devis" actions={perms.canCreateQuotes ? <Link href={`/devis/nouveau?dossierId=${id}`} className="text-sm text-link-600 hover:underline">+ Nouveau devis</Link> : undefined}>
+          {!loan && <Card title="Devis" actions={perms.canCreateQuotes ? <Link href={`/devis/nouveau?dossierId=${id}`} className="text-sm text-link-600 hover:underline">+ Nouveau devis</Link> : undefined}>
             {d.quotes.length === 0 ? <Empty>Aucun devis. Créez-le à partir du catalogue.</Empty> : (
               <ul className="divide-y divide-slate-100 text-sm">
                 {d.quotes.map((q) => (
@@ -163,9 +165,9 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
                 ))}
               </ul>
             )}
-          </Card>
+          </Card>}
 
-          <Card title="Échéancier et paiements" actions={d.payments.length === 0 ? <form action={generatePayments.bind(null, id)}><button className="text-sm text-link-600 hover:underline">Créer acompte + solde</button></form> : undefined}>
+          {!loan && <Card title="Échéancier et paiements" actions={d.payments.length === 0 ? <form action={generatePayments.bind(null, id)}><button className="text-sm text-link-600 hover:underline">Créer acompte + solde</button></form> : undefined}>
             {d.payments.length === 0 ? <Empty>Aucune échéance. L&apos;échéancier est créé automatiquement à la confirmation.</Empty> : (
               <ul className="divide-y divide-slate-100 text-sm">
                 {d.payments.map((p) => {
@@ -199,7 +201,7 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
                 <button className="btn-secondary">Ajouter</button>
               </form>
             </details>
-          </Card>
+          </Card>}
 
           {d.invoices.length > 0 && (
             <Card title="Factures">
@@ -278,7 +280,7 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
             {d.description && <p className="mt-4 text-sm whitespace-pre-wrap text-slate-700">{d.description}</p>}
           </Card>
 
-          {perms.canSendSignatures && (
+          {perms.canSendSignatures && !loan && (
             <Card title="Contrats et signatures" actions={<Link href={`/contrats/generer?dossierId=${id}`} className="text-sm text-link-600 hover:underline">Générer</Link>}>
               <SignatureList items={d.signatures} newHref={`/signatures/nouveau?clientId=${d.clientId}&dossierId=${id}`} />
             </Card>
@@ -320,7 +322,7 @@ export default async function PrestationPage({ params }: { params: Promise<{ id:
             )}
           </Card>
 
-          {d.eventType !== "LOCATION" && (
+          {!isGearOnly(d.eventType) && (
             <PrepChecklist
               dossierId={id}
               list={parsePrep(d.prepList)}
